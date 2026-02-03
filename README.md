@@ -6,16 +6,32 @@ A beautiful visual countdown timer web application inspired by the iconic Time T
 
 ## Features
 
+### Core Timer
 - **Visual Countdown**: Large circular display shows time remaining with a colored arc that sweeps as time passes
 - **Color-Coded Progress**: Arc color smoothly transitions from green → yellow → orange → red as time runs out
 - **Preset Durations**: Quick-select buttons for 5, 10, 15, 30, 45, and 60 minutes
 - **Smooth Animations**: 60fps canvas-based animations for a satisfying visual experience
-- **Sound Notification**: Pleasant chime plays when the timer completes (can be toggled off)
+
+### Seasonal Themes & Weather Effects
+- **Four Seasons**: Spring, Summer, Autumn, and Winter themes that change the visual atmosphere
+- **Dynamic Weather**: Animated effects including cherry blossoms, fireflies, falling leaves, and snowflakes
+- **Auto-Season Mode**: Automatically matches the current real-world season
+
+### Minimal UI Mode
+- **Distraction-Free**: Toggle minimal mode to hide controls and show only the timer
+- **Focus Sessions**: Perfect for presentations or when you need a clean display
+
+### Settings & Customization
+- **Settings Modal**: Centralized settings panel for all preferences
+- **Sound Notification**: Pleasant chime when timer completes (toggleable)
 - **Haptic Feedback**: Vibration on mobile devices when timer completes
-- **Dark Mode**: Automatic system detection or manual toggle between light/dark themes
-- **Offline Support**: Works offline via Service Worker - perfect for focus sessions
+- **Dark Mode**: Automatic system detection or manual toggle
+- **Debug Mode**: Developer tools for testing timer states and animations
+
+### Technical
+- **Offline Support**: Works offline via Service Worker
 - **Mobile-First Design**: Touch-friendly controls and responsive layout
-- **Persistent Preferences**: Your settings are saved locally
+- **Persistent Preferences**: All settings saved locally
 
 ## Demo
 
