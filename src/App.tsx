@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { TimerDisplay, PresetButtons, Controls, Settings } from './components'
+import { TimerDisplay, Controls, Settings } from './components'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -11,7 +11,7 @@ import {
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
-  const [selectedMinutes, setSelectedMinutes] = useState(preferences.lastDuration)
+  const [selectedMinutes, setSelectedMinutes] = useState(0)
 
   const handleComplete = useCallback(() => {
     if (preferences.soundEnabled) {
@@ -57,15 +57,21 @@ function App() {
     }
   }, [])
 
-  const handlePresetSelect = (minutes: number) => {
+  // Handle duration set from the dial
+  const handleDurationSet = useCallback((minutes: number) => {
     setSelectedMinutes(minutes)
     timer.setDuration(minutes)
     savePreferences({ lastDuration: minutes })
     setPreferences((prev) => ({ ...prev, lastDuration: minutes }))
-  }
+  }, [timer])
 
   const handleStart = () => {
     timer.start(selectedMinutes)
+  }
+
+  const handleReset = () => {
+    timer.reset()
+    setSelectedMinutes(0)
   }
 
   const handleSoundToggle = () => {
@@ -79,39 +85,23 @@ function App() {
     setPreferences((prev) => ({ ...prev, darkMode: theme }))
   }
 
-  // Set initial duration on mount
-  useEffect(() => {
-    if (timer.state === 'idle' && timer.totalDuration === 0) {
-      timer.setDuration(selectedMinutes)
-    }
-  }, [timer, selectedMinutes])
-
   return (
     <div className="min-h-full bg-white dark:bg-gray-900 transition-colors duration-300">
       <div className="max-w-lg mx-auto px-4 py-8 md:py-12 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="text-center mb-8">
+        <header className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-light text-gray-800 dark:text-gray-100 tracking-tight">
             Time Timer
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Visual countdown timer
-          </p>
         </header>
 
-        {/* Timer Display */}
-        <main className="flex-1 flex flex-col justify-center gap-8">
+        {/* Timer Display - Interactive Dial */}
+        <main className="flex-1 flex flex-col justify-center gap-6">
           <TimerDisplay
             progress={timer.progress}
             timeRemaining={timer.timeRemaining}
             state={timer.state}
-          />
-
-          {/* Preset Buttons */}
-          <PresetButtons
-            onSelect={handlePresetSelect}
-            selectedDuration={timer.totalDuration}
-            disabled={timer.state !== 'idle'}
+            onDurationSet={handleDurationSet}
           />
 
           {/* Controls */}
@@ -120,7 +110,7 @@ function App() {
             onStart={handleStart}
             onPause={timer.pause}
             onResume={timer.resume}
-            onReset={timer.reset}
+            onReset={handleReset}
             canStart={timer.totalDuration > 0}
           />
         </main>
