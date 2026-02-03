@@ -15,61 +15,92 @@ export interface WeatherConfig {
 export const WEATHER_CONFIGS: Record<Weather, WeatherConfig> = {
   sunny: {
     name: 'Sunny',
-    particleCount: 0, // No particles, just glow effect
-    particleSpeed: { min: 0, max: 0 },
-    particleSize: { min: 0, max: 0 },
+    particleCount: 25, // Floating dust particles in sunbeam
+    particleSpeed: { min: 0.2, max: 0.5 },
+    particleSize: { min: 1, max: 3 },
     particleColor: '#FFD700',
-    particleOpacity: { min: 0, max: 0 },
-    backgroundOverlay: 'rgba(255, 250, 205, 0.1)',
+    particleOpacity: { min: 0.2, max: 0.5 },
+    backgroundOverlay: 'rgba(255, 250, 205, 0.08)',
     glowEffect: '0 0 100px 20px rgba(255, 215, 0, 0.15)',
   },
   rainy: {
     name: 'Rainy',
-    particleCount: 50,
-    particleSpeed: { min: 4, max: 8 },
-    particleSize: { min: 1, max: 2 },
+    particleCount: 150, // More raindrops for fuller coverage
+    particleSpeed: { min: 6, max: 12 },
+    particleSize: { min: 1, max: 3 },
     particleColor: '#87CEEB',
-    particleOpacity: { min: 0.3, max: 0.6 },
-    backgroundOverlay: 'rgba(100, 149, 237, 0.08)',
+    particleOpacity: { min: 0.3, max: 0.7 },
+    backgroundOverlay: 'rgba(100, 149, 237, 0.06)',
   },
   snowy: {
     name: 'Snowy',
-    particleCount: 40,
-    particleSpeed: { min: 0.5, max: 1.5 },
-    particleSize: { min: 2, max: 5 },
+    particleCount: 80, // More snowflakes
+    particleSpeed: { min: 0.3, max: 1.2 },
+    particleSize: { min: 2, max: 6 },
     particleColor: '#FFFFFF',
-    particleOpacity: { min: 0.6, max: 0.9 },
-    backgroundOverlay: 'rgba(240, 248, 255, 0.1)',
+    particleOpacity: { min: 0.5, max: 0.95 },
+    backgroundOverlay: 'rgba(240, 248, 255, 0.08)',
   },
   cloudy: {
     name: 'Cloudy',
-    particleCount: 0, // Clouds are rendered as decorations, not particles
+    particleCount: 0, // Clouds are rendered separately
     particleSpeed: { min: 0, max: 0 },
     particleSize: { min: 0, max: 0 },
     particleColor: '#D3D3D3',
     particleOpacity: { min: 0, max: 0 },
-    backgroundOverlay: 'rgba(169, 169, 169, 0.05)',
+    backgroundOverlay: 'rgba(169, 169, 169, 0.04)',
   },
   night: {
     name: 'Clear Night',
-    particleCount: 30, // Twinkling stars
-    particleSpeed: { min: 0, max: 0 }, // Stars don't move
-    particleSize: { min: 1, max: 3 },
+    particleCount: 60, // More twinkling stars
+    particleSpeed: { min: 0, max: 0 },
+    particleSize: { min: 0.5, max: 3 },
     particleColor: '#FFFACD',
-    particleOpacity: { min: 0.3, max: 1 }, // Twinkling effect
-    backgroundOverlay: 'rgba(25, 25, 112, 0.15)',
+    particleOpacity: { min: 0.2, max: 1 },
+    backgroundOverlay: 'rgba(15, 15, 60, 0.12)',
     glowEffect: '0 0 50px 10px rgba(255, 250, 205, 0.1)',
   },
 };
 
+// Extended particle with more properties for enhanced effects
 export interface Particle {
   x: number;
   y: number;
   size: number;
   speed: number;
   opacity: number;
-  wobble: number; // For snowflakes horizontal drift
-  twinklePhase: number; // For stars twinkling
+  wobble: number;
+  twinklePhase: number;
+  // New properties for enhanced effects
+  layer: number; // 0 = back, 1 = mid, 2 = front (for depth)
+  type: 'normal' | 'mist' | 'large' | 'star' | 'brightStar' | 'dust';
+  drift: number; // Horizontal drift speed
+  angle: number; // For rain angle variation
+  splashTimer: number; // For rain splash effect
+  swayAmplitude: number; // For snow sway
+  swaySpeed: number; // For snow sway speed
+  baseOpacity: number; // Original opacity for twinkling
+  twinkleSpeed: number; // Individual twinkle speed
+}
+
+// Rain splash effect
+export interface Splash {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  size: number;
+}
+
+// Shooting star for night effect
+export interface ShootingStar {
+  x: number;
+  y: number;
+  length: number;
+  speed: number;
+  angle: number;
+  life: number;
+  opacity: number;
 }
 
 /**
@@ -80,18 +111,57 @@ export function createParticles(weather: Weather, width: number, height: number)
   const particles: Particle[] = [];
 
   for (let i = 0; i < config.particleCount; i++) {
+    const layer = Math.floor(Math.random() * 3); // 0, 1, or 2
+    const layerMultiplier = 0.5 + layer * 0.25; // Back layer slower/smaller
+
+    let type: Particle['type'] = 'normal';
+    if (weather === 'rainy') {
+      const rand = Math.random();
+      if (rand < 0.2) type = 'mist';
+      else if (rand > 0.85) type = 'large';
+    } else if (weather === 'night') {
+      const rand = Math.random();
+      if (rand < 0.1) type = 'brightStar';
+      else type = 'star';
+    } else if (weather === 'sunny') {
+      type = 'dust';
+    }
+
+    const baseSize =
+      config.particleSize.min + Math.random() * (config.particleSize.max - config.particleSize.min);
+    const baseSpeed =
+      config.particleSpeed.min + Math.random() * (config.particleSpeed.max - config.particleSpeed.min);
+    const baseOpacity =
+      config.particleOpacity.min + Math.random() * (config.particleOpacity.max - config.particleOpacity.min);
+
     particles.push({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: config.particleSize.min + Math.random() * (config.particleSize.max - config.particleSize.min),
-      speed: config.particleSpeed.min + Math.random() * (config.particleSpeed.max - config.particleSpeed.min),
-      opacity: config.particleOpacity.min + Math.random() * (config.particleOpacity.max - config.particleOpacity.min),
+      size: baseSize * layerMultiplier,
+      speed: baseSpeed * layerMultiplier,
+      opacity: baseOpacity * (0.6 + layer * 0.2),
       wobble: Math.random() * Math.PI * 2,
       twinklePhase: Math.random() * Math.PI * 2,
+      layer,
+      type,
+      drift: (Math.random() - 0.5) * 0.5,
+      angle: weather === 'rainy' ? 0.1 + Math.random() * 0.1 : 0, // Slight rain angle
+      splashTimer: 0,
+      swayAmplitude: 0.3 + Math.random() * 0.7,
+      swaySpeed: 0.015 + Math.random() * 0.02,
+      baseOpacity,
+      twinkleSpeed: 0.02 + Math.random() * 0.03,
     });
   }
 
   return particles;
+}
+
+/**
+ * Create splashes array
+ */
+export function createSplashes(): Splash[] {
+  return [];
 }
 
 /**
@@ -102,61 +172,154 @@ export function updateParticles(
   weather: Weather,
   width: number,
   height: number,
-  deltaTime: number
+  deltaTime: number,
+  splashes?: Splash[]
 ): Particle[] {
   const config = WEATHER_CONFIGS[weather];
 
   return particles.map(particle => {
     const newParticle = { ...particle };
+    const dt = deltaTime * 60;
 
     switch (weather) {
-      case 'rainy':
-        // Rain falls straight down with slight angle
-        newParticle.y += particle.speed * deltaTime * 60;
-        newParticle.x += 0.5 * deltaTime * 60; // Slight wind effect
-        // Reset when off screen
+      case 'rainy': {
+        // Rain falls with angle and speed variation based on layer
+        const layerSpeed = 1 + particle.layer * 0.3;
+        newParticle.y += particle.speed * layerSpeed * dt;
+        newParticle.x += (0.8 + particle.layer * 0.2) * dt; // Wind effect varies by layer
+
+        // Reset when off screen and potentially create splash
         if (newParticle.y > height) {
-          newParticle.y = -10;
+          // Add splash effect
+          if (splashes && particle.type !== 'mist' && Math.random() > 0.7) {
+            splashes.push({
+              x: newParticle.x,
+              y: height - 5,
+              life: 0,
+              maxLife: 0.3 + Math.random() * 0.2,
+              size: particle.size * 2,
+            });
+          }
+          newParticle.y = -20 - Math.random() * 50;
           newParticle.x = Math.random() * width;
         }
-        if (newParticle.x > width) {
-          newParticle.x = 0;
+        if (newParticle.x > width + 20) {
+          newParticle.x = -10;
         }
         break;
+      }
 
-      case 'snowy':
-        // Snowflakes drift and wobble
-        newParticle.wobble += 0.02 * deltaTime * 60;
-        newParticle.y += particle.speed * deltaTime * 60;
-        newParticle.x += Math.sin(newParticle.wobble) * 0.5;
-        // Reset when off screen
-        if (newParticle.y > height) {
-          newParticle.y = -10;
-          newParticle.x = Math.random() * width;
-        }
-        if (newParticle.x > width) {
-          newParticle.x = 0;
-        } else if (newParticle.x < 0) {
-          newParticle.x = width;
-        }
-        break;
+      case 'snowy': {
+        // Snowflakes drift and sway gently
+        newParticle.wobble += newParticle.swaySpeed * dt;
+        const layerSpeed = 0.6 + particle.layer * 0.2;
+        newParticle.y += particle.speed * layerSpeed * dt;
 
-      case 'night':
-        // Stars twinkle in place
-        newParticle.twinklePhase += 0.03 * deltaTime * 60;
+        // Gentle horizontal sway
+        const sway = Math.sin(newParticle.wobble) * newParticle.swayAmplitude;
+        newParticle.x += sway + particle.drift * 0.3;
+
+        // Subtle opacity variation as it falls (like catching light)
         newParticle.opacity =
-          config.particleOpacity.min +
-          (Math.sin(newParticle.twinklePhase) * 0.5 + 0.5) *
-            (config.particleOpacity.max - config.particleOpacity.min);
+          particle.baseOpacity * (0.85 + 0.15 * Math.sin(newParticle.wobble * 0.5));
+
+        // Reset when off screen
+        if (newParticle.y > height + 10) {
+          newParticle.y = -20 - Math.random() * 30;
+          newParticle.x = Math.random() * width;
+        }
+        if (newParticle.x > width + 20) {
+          newParticle.x = -20;
+        } else if (newParticle.x < -20) {
+          newParticle.x = width + 20;
+        }
         break;
+      }
+
+      case 'night': {
+        // Stars twinkle with individual speeds
+        newParticle.twinklePhase += particle.twinkleSpeed * dt;
+
+        // Brighter stars twinkle more noticeably
+        const twinkleRange = particle.type === 'brightStar' ? 0.7 : 0.4;
+        const baseMin = particle.type === 'brightStar' ? 0.6 : config.particleOpacity.min;
+
+        newParticle.opacity =
+          baseMin + (Math.sin(newParticle.twinklePhase) * 0.5 + 0.5) * twinkleRange;
+        break;
+      }
+
+      case 'sunny': {
+        // Dust particles float gently
+        newParticle.wobble += 0.01 * dt;
+        newParticle.twinklePhase += 0.015 * dt;
+
+        // Gentle floating motion
+        newParticle.y += Math.sin(newParticle.wobble) * 0.2;
+        newParticle.x += Math.cos(newParticle.twinklePhase) * 0.15;
+
+        // Opacity shimmer
+        newParticle.opacity = particle.baseOpacity * (0.7 + 0.3 * Math.sin(newParticle.wobble * 2));
+
+        // Keep in bounds with gentle wrapping
+        if (newParticle.y > height + 10) newParticle.y = -10;
+        if (newParticle.y < -10) newParticle.y = height + 10;
+        if (newParticle.x > width + 10) newParticle.x = -10;
+        if (newParticle.x < -10) newParticle.x = width + 10;
+        break;
+      }
 
       default:
-        // No particle animation for sunny/cloudy
         break;
     }
 
     return newParticle;
   });
+}
+
+/**
+ * Update splashes
+ */
+export function updateSplashes(splashes: Splash[], deltaTime: number): Splash[] {
+  return splashes
+    .map(splash => ({
+      ...splash,
+      life: splash.life + deltaTime,
+    }))
+    .filter(splash => splash.life < splash.maxLife);
+}
+
+/**
+ * Create a shooting star
+ */
+export function createShootingStar(width: number, height: number): ShootingStar {
+  return {
+    x: Math.random() * width * 0.8,
+    y: Math.random() * height * 0.4,
+    length: 30 + Math.random() * 40,
+    speed: 300 + Math.random() * 200,
+    angle: Math.PI / 4 + (Math.random() - 0.5) * 0.3, // ~45 degrees with variation
+    life: 0,
+    opacity: 0.7 + Math.random() * 0.3,
+  };
+}
+
+/**
+ * Update shooting star
+ */
+export function updateShootingStar(star: ShootingStar, deltaTime: number): ShootingStar | null {
+  const newStar = { ...star };
+  newStar.x += Math.cos(star.angle) * star.speed * deltaTime;
+  newStar.y += Math.sin(star.angle) * star.speed * deltaTime;
+  newStar.life += deltaTime;
+
+  // Fade out over time
+  newStar.opacity = star.opacity * (1 - newStar.life * 2);
+
+  if (newStar.life > 0.5 || newStar.opacity <= 0) {
+    return null;
+  }
+  return newStar;
 }
 
 /**

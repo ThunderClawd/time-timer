@@ -120,7 +120,7 @@ export function updateFallingElement(
 }
 
 /**
- * Cloud drift animation
+ * Enhanced Cloud with more properties for fluffy, realistic appearance
  */
 export interface Cloud {
   x: number;
@@ -128,33 +128,95 @@ export interface Cloud {
   scale: number;
   opacity: number;
   speed: number;
+  // New properties for enhanced clouds
+  layer: number; // 0 = far back, 1 = mid, 2 = front
+  puffCount: number; // Number of puffs in this cloud
+  puffs: CloudPuff[]; // Individual puff positions for fluffier look
+  verticalDrift: number; // Subtle vertical movement
+  driftPhase: number;
+}
+
+export interface CloudPuff {
+  offsetX: number; // Relative to cloud center
+  offsetY: number;
+  scale: number;
+  opacity: number;
 }
 
 export function createClouds(count: number): Cloud[] {
   const clouds: Cloud[] = [];
+
   for (let i = 0; i < count; i++) {
+    const layer = Math.floor(Math.random() * 3);
+    const layerOpacity = 0.25 + layer * 0.12;
+    const layerSpeed = 0.008 + layer * 0.006;
+    const layerScale = 0.7 + layer * 0.25;
+
+    // Create 4-7 puffs per cloud for fluffy appearance
+    const puffCount = 4 + Math.floor(Math.random() * 4);
+    const puffs: CloudPuff[] = [];
+
+    for (let j = 0; j < puffCount; j++) {
+      puffs.push({
+        offsetX: (j - puffCount / 2) * 20 + (Math.random() - 0.5) * 15,
+        offsetY: (Math.random() - 0.5) * 20,
+        scale: 0.6 + Math.random() * 0.5,
+        opacity: 0.7 + Math.random() * 0.3,
+      });
+    }
+
     clouds.push({
-      x: Math.random() * 120 - 10, // Allow some off-screen positioning
-      y: 5 + Math.random() * 25, // Top portion of screen
-      scale: 0.6 + Math.random() * 0.6,
-      opacity: 0.4 + Math.random() * 0.3,
-      speed: 0.01 + Math.random() * 0.02,
+      x: Math.random() * 140 - 20, // Allow off-screen positioning
+      y: 8 + layer * 8 + Math.random() * 15, // Layered heights
+      scale: layerScale + Math.random() * 0.3,
+      opacity: layerOpacity + Math.random() * 0.1,
+      speed: layerSpeed + Math.random() * 0.005,
+      layer,
+      puffCount,
+      puffs,
+      verticalDrift: Math.random() * Math.PI * 2,
+      driftPhase: Math.random() * Math.PI * 2,
     });
   }
-  return clouds;
+
+  // Sort by layer so back clouds render first
+  return clouds.sort((a, b) => a.layer - b.layer);
 }
 
 export function updateCloud(cloud: Cloud, deltaTime: number): Cloud {
   let newX = cloud.x + cloud.speed * deltaTime * 60;
+  const newDriftPhase = cloud.driftPhase + 0.005 * deltaTime * 60;
 
-  // Wrap around
-  if (newX > 110) {
-    newX = -20;
+  // Wrap around with buffer
+  if (newX > 130) {
+    newX = -30;
   }
 
   return {
     ...cloud,
     x: newX,
+    driftPhase: newDriftPhase,
+  };
+}
+
+/**
+ * Moon configuration for night effect
+ */
+export interface Moon {
+  x: number; // Percentage position
+  y: number;
+  size: number;
+  phase: number; // 0-1, 0 = new moon, 0.5 = full moon
+  glowIntensity: number;
+}
+
+export function createMoon(): Moon {
+  return {
+    x: 80 + Math.random() * 10, // Top right area
+    y: 10 + Math.random() * 10,
+    size: 35 + Math.random() * 10,
+    phase: 0.7 + Math.random() * 0.3, // Mostly full or gibbous
+    glowIntensity: 0.15 + Math.random() * 0.1,
   };
 }
 
