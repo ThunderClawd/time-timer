@@ -642,7 +642,7 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
           drawClouds(ctx, dimensions.width, dimensions.height);
           break;
 
-        case 'night':
+        case 'night': {
           particlesRef.current = updateParticles(
             particlesRef.current,
             weather,
@@ -682,8 +682,9 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
 
           drawNight(ctx, dimensions.width, dimensions.height);
           break;
+        }
 
-        case 'sunny':
+        case 'sunny': {
           particlesRef.current = updateParticles(
             particlesRef.current,
             weather,
@@ -709,6 +710,7 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
 
           drawSunny(ctx, dimensions.width, dimensions.height);
           break;
+        }
       }
 
       animationId = requestAnimationFrame(animate);
