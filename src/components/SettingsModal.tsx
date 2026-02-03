@@ -9,12 +9,9 @@ interface SettingsModalProps {
   onThemeChange: (theme: 'auto' | 'light' | 'dark') => void
   onSeasonalThemeToggle: () => void
   onWeatherEffectsToggle: () => void
-  onPresetSelect: (minutes: number) => void
   onReset: () => void
   canReset: boolean
 }
-
-const PRESETS = [5, 10, 15, 30, 45, 60]
 
 export function SettingsModal({
   isOpen,
@@ -24,7 +21,6 @@ export function SettingsModal({
   onThemeChange,
   onSeasonalThemeToggle,
   onWeatherEffectsToggle,
-  onPresetSelect,
   onReset,
   canReset,
 }: SettingsModalProps) {
@@ -76,36 +72,6 @@ export function SettingsModal({
 
         {/* Content */}
         <div className="px-6 py-5 space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* Duration Presets */}
-          <section>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Quick Presets
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {PRESETS.map((minutes) => (
-                <button
-                  key={minutes}
-                  onClick={() => {
-                    onPresetSelect(minutes)
-                    onClose()
-                  }}
-                  className="
-                    py-3 px-4 rounded-xl
-                    text-sm font-medium
-                    bg-gray-100 dark:bg-gray-800
-                    text-gray-700 dark:text-gray-300
-                    hover:bg-blue-50 dark:hover:bg-blue-900/30
-                    hover:text-blue-600 dark:hover:text-blue-400
-                    transition-colors duration-150
-                    focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                  "
-                >
-                  {minutes} min
-                </button>
-              ))}
-            </div>
-          </section>
-
           {/* Sound Toggle */}
           <section className="flex items-center justify-between">
             <div className="flex items-center gap-3">

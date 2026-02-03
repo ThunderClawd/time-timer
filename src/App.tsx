@@ -109,14 +109,6 @@ function App() {
     setPreferences((prev) => ({ ...prev, lastDuration: minutes }))
   }, [timer])
 
-  // Handle preset selection from settings modal
-  const handlePresetSelect = useCallback((minutes: number) => {
-    setSelectedMinutes(minutes)
-    timer.setDuration(minutes)
-    savePreferences({ lastDuration: minutes })
-    setPreferences((prev) => ({ ...prev, lastDuration: minutes }))
-  }, [timer])
-
   const handleStart = () => {
     timer.start(selectedMinutes)
   }
@@ -222,7 +214,6 @@ function App() {
         onThemeChange={handleThemeChange}
         onSeasonalThemeToggle={handleSeasonalThemeToggle}
         onWeatherEffectsToggle={handleWeatherEffectsToggle}
-        onPresetSelect={handlePresetSelect}
         onReset={handleReset}
         canReset={canReset}
       />
