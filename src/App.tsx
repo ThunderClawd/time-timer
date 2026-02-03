@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { TimerDisplay, Controls, Settings } from './components'
+import { TimerDisplay } from './components'
+import { SettingsButton } from './components/SettingsButton'
+import { StartStopButton } from './components/StartStopButton'
+import { SettingsModal } from './components/SettingsModal'
 import { SeasonalDecorations } from './components/SeasonalDecorations'
 import { WeatherEffects } from './components/WeatherEffects'
 import { DebugPanel } from './components/DebugPanel'
@@ -23,6 +26,7 @@ import type { Weather } from './themes/weather'
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
   const [selectedMinutes, setSelectedMinutes] = useState(0)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Seasonal theme state
   const debugParams = useMemo(() => getDebugParams(), [])
@@ -105,6 +109,14 @@ function App() {
     setPreferences((prev) => ({ ...prev, lastDuration: minutes }))
   }, [timer])
 
+  // Handle preset selection from settings modal
+  const handlePresetSelect = useCallback((minutes: number) => {
+    setSelectedMinutes(minutes)
+    timer.setDuration(minutes)
+    savePreferences({ lastDuration: minutes })
+    setPreferences((prev) => ({ ...prev, lastDuration: minutes }))
+  }, [timer])
+
   const handleStart = () => {
     timer.start(selectedMinutes)
   }
@@ -154,6 +166,9 @@ function App() {
     setDebugMode(false)
   }
 
+  // Determine if reset is available (timer is running, paused, or completed)
+  const canReset = timer.state === 'running' || timer.state === 'paused' || timer.state === 'completed'
+
   return (
     <div
       className="min-h-full transition-colors duration-500 relative overflow-hidden"
@@ -169,20 +184,13 @@ function App() {
       {/* Seasonal decorations layer */}
       {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
 
-      {/* Main content */}
-      <div className="relative z-10 max-w-lg mx-auto px-4 py-8 md:py-12 flex flex-col min-h-screen">
-        {/* Header */}
-        <header className="text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-light text-gray-800 dark:text-gray-100 tracking-tight">
-            Time Timer
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-70">
-            {seasonConfig.name} Edition
-          </p>
-        </header>
+      {/* Settings button - top right */}
+      <SettingsButton onClick={() => setSettingsOpen(true)} />
 
-        {/* Timer Display - Interactive Dial */}
-        <main className="flex-1 flex flex-col justify-center gap-6">
+      {/* Main content - minimal and centered */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
+        {/* Timer Display */}
+        <div className="w-full max-w-lg">
           <TimerDisplay
             progress={timer.progress}
             timeRemaining={timer.timeRemaining}
@@ -191,29 +199,33 @@ function App() {
             season={currentSeason}
             seasonalThemeEnabled={preferences.seasonalTheme}
           />
+        </div>
 
-          {/* Controls */}
-          <Controls
+        {/* Start/Stop Button */}
+        <div className="mt-8">
+          <StartStopButton
             state={timer.state}
             onStart={handleStart}
             onPause={timer.pause}
             onResume={timer.resume}
-            onReset={handleReset}
             canStart={timer.totalDuration > 0}
           />
-        </main>
-
-        {/* Settings */}
-        <footer className="mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-800/50">
-          <Settings
-            preferences={preferences}
-            onSoundToggle={handleSoundToggle}
-            onThemeChange={handleThemeChange}
-            onSeasonalThemeToggle={handleSeasonalThemeToggle}
-            onWeatherEffectsToggle={handleWeatherEffectsToggle}
-          />
-        </footer>
+        </div>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        preferences={preferences}
+        onSoundToggle={handleSoundToggle}
+        onThemeChange={handleThemeChange}
+        onSeasonalThemeToggle={handleSeasonalThemeToggle}
+        onWeatherEffectsToggle={handleWeatherEffectsToggle}
+        onPresetSelect={handlePresetSelect}
+        onReset={handleReset}
+        canReset={canReset}
+      />
 
       {/* Debug Panel - only in debug mode */}
       {debugMode && (
