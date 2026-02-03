@@ -34,12 +34,13 @@ export const WEATHER_CONFIGS: Record<Weather, WeatherConfig> = {
   },
   snowy: {
     name: 'Snowy',
-    particleCount: 80, // More snowflakes
-    particleSpeed: { min: 0.3, max: 1.2 },
-    particleSize: { min: 2, max: 6 },
+    particleCount: 130, // Fuller coverage with more snowflakes
+    particleSpeed: { min: 0.4, max: 1.5 },
+    particleSize: { min: 3, max: 8 },
     particleColor: '#FFFFFF',
-    particleOpacity: { min: 0.5, max: 0.95 },
+    particleOpacity: { min: 0.6, max: 1.0 },
     backgroundOverlay: 'rgba(240, 248, 255, 0.08)',
+    glowEffect: '0 0 15px 5px rgba(255, 255, 255, 0.3)',
   },
   cloudy: {
     name: 'Cloudy',

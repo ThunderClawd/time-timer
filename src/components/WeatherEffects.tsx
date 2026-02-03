@@ -144,9 +144,9 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
     for (let layer = 0; layer < 3; layer++) {
       particlesRef.current
         .filter(p => p.layer === layer)
-        .forEach(particle => {
-          // Subtle glow for depth
-          const glowSize = particle.size * (1.5 + layer * 0.3);
+        .forEach((particle, index) => {
+          // Enhanced glow size based on layer - front layer particles are more prominent
+          const glowSize = particle.size * (1.8 + layer * 0.5);
           const gradient = ctx.createRadialGradient(
             particle.x,
             particle.y,
@@ -156,10 +156,11 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
             glowSize
           );
 
-          // Softer, more magical glow
-          const alpha = particle.opacity * (0.6 + layer * 0.15);
+          // More vibrant, magical glow with better visibility
+          const alpha = particle.opacity * (0.7 + layer * 0.15);
           gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-          gradient.addColorStop(0.4, `rgba(245, 250, 255, ${alpha * 0.6})`);
+          gradient.addColorStop(0.3, `rgba(230, 240, 255, ${alpha * 0.75})`);
+          gradient.addColorStop(0.6, `rgba(200, 220, 255, ${alpha * 0.35})`);
           gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
           ctx.beginPath();
@@ -167,15 +168,24 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
           ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
           ctx.fill();
 
-          // Core snowflake - slightly crystalline look for front layer
-          if (layer === 2 && particle.size > 4) {
-            // Draw a simple 6-point star for larger front flakes
+          // Snowflake core - solid white center for visibility
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+          ctx.arc(particle.x, particle.y, particle.size * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Determine snowflake style based on particle index for variety
+          const snowflakeStyle = index % 4;
+
+          // Mid layer: add subtle crystalline details for some flakes
+          if (layer === 1 && particle.size > 4.5) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
-            ctx.lineWidth = 0.5;
-            const coreSize = particle.size * 0.4;
-            for (let i = 0; i < 6; i++) {
-              const angle = (i * Math.PI) / 3;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
+            ctx.lineWidth = 0.8;
+            const coreSize = particle.size * 0.5;
+            // Simple 4-point cross
+            for (let i = 0; i < 4; i++) {
+              const angle = (i * Math.PI) / 2;
               ctx.moveTo(particle.x, particle.y);
               ctx.lineTo(
                 particle.x + Math.cos(angle) * coreSize,
@@ -183,6 +193,113 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
               );
             }
             ctx.stroke();
+          }
+
+          // Front layer: detailed crystalline snowflakes with variety
+          if (layer === 2 && particle.size > 4) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
+
+            if (snowflakeStyle === 0) {
+              // Classic 6-point star with branches
+              ctx.lineWidth = 1;
+              const coreSize = particle.size * 0.7;
+              const branchSize = coreSize * 0.4;
+              for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3 + particle.wobble * 0.1;
+                // Main arm
+                ctx.beginPath();
+                ctx.moveTo(particle.x, particle.y);
+                const armEndX = particle.x + Math.cos(angle) * coreSize;
+                const armEndY = particle.y + Math.sin(angle) * coreSize;
+                ctx.lineTo(armEndX, armEndY);
+                ctx.stroke();
+                // Small branches on each arm
+                const midX = particle.x + Math.cos(angle) * coreSize * 0.6;
+                const midY = particle.y + Math.sin(angle) * coreSize * 0.6;
+                ctx.beginPath();
+                ctx.moveTo(midX, midY);
+                ctx.lineTo(
+                  midX + Math.cos(angle + 0.5) * branchSize,
+                  midY + Math.sin(angle + 0.5) * branchSize
+                );
+                ctx.moveTo(midX, midY);
+                ctx.lineTo(
+                  midX + Math.cos(angle - 0.5) * branchSize,
+                  midY + Math.sin(angle - 0.5) * branchSize
+                );
+                ctx.stroke();
+              }
+            } else if (snowflakeStyle === 1) {
+              // Simple 6-point star
+              ctx.lineWidth = 1.2;
+              const coreSize = particle.size * 0.6;
+              ctx.beginPath();
+              for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                ctx.moveTo(particle.x, particle.y);
+                ctx.lineTo(
+                  particle.x + Math.cos(angle) * coreSize,
+                  particle.y + Math.sin(angle) * coreSize
+                );
+              }
+              ctx.stroke();
+            } else if (snowflakeStyle === 2) {
+              // Diamond/hexagon shape
+              ctx.lineWidth = 0.8;
+              const coreSize = particle.size * 0.5;
+              ctx.beginPath();
+              for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const x = particle.x + Math.cos(angle) * coreSize;
+                const y = particle.y + Math.sin(angle) * coreSize;
+                if (i === 0) {
+                  ctx.moveTo(x, y);
+                } else {
+                  ctx.lineTo(x, y);
+                }
+              }
+              ctx.closePath();
+              ctx.stroke();
+              // Inner detail
+              ctx.beginPath();
+              for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3 + Math.PI / 6;
+                ctx.moveTo(particle.x, particle.y);
+                ctx.lineTo(
+                  particle.x + Math.cos(angle) * coreSize * 0.5,
+                  particle.y + Math.sin(angle) * coreSize * 0.5
+                );
+              }
+              ctx.stroke();
+            } else {
+              // Asterisk style with dots
+              ctx.lineWidth = 1;
+              const coreSize = particle.size * 0.55;
+              ctx.beginPath();
+              for (let i = 0; i < 8; i++) {
+                const angle = (i * Math.PI) / 4;
+                ctx.moveTo(particle.x, particle.y);
+                ctx.lineTo(
+                  particle.x + Math.cos(angle) * coreSize,
+                  particle.y + Math.sin(angle) * coreSize
+                );
+              }
+              ctx.stroke();
+              // Dots at endpoints
+              ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+              for (let i = 0; i < 8; i++) {
+                const angle = (i * Math.PI) / 4;
+                ctx.beginPath();
+                ctx.arc(
+                  particle.x + Math.cos(angle) * coreSize,
+                  particle.y + Math.sin(angle) * coreSize,
+                  1.2,
+                  0,
+                  Math.PI * 2
+                );
+                ctx.fill();
+              }
+            }
           }
         });
     }
