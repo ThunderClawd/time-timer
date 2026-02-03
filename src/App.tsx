@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { TimerDisplay, Controls, Settings } from './components'
+import { SeasonalDecorations } from './components/SeasonalDecorations'
+import { WeatherEffects } from './components/WeatherEffects'
+import { DebugPanel } from './components/DebugPanel'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -8,10 +11,39 @@ import {
   savePreferences,
   type Preferences,
 } from './utils'
+import {
+  getCurrentSeason,
+  getSeasonConfig,
+  getDebugParams,
+  isNightTime,
+  type Season,
+} from './themes/seasons'
+import type { Weather } from './themes/weather'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
   const [selectedMinutes, setSelectedMinutes] = useState(0)
+
+  // Seasonal theme state
+  const debugParams = useMemo(() => getDebugParams(), [])
+  const [debugMode, setDebugMode] = useState(debugParams.debugMode)
+  const [currentSeason, setCurrentSeason] = useState<Season>(
+    debugParams.forceSeason || getCurrentSeason()
+  )
+  const [currentWeather, setCurrentWeather] = useState<Weather>(() => {
+    if (debugParams.forceWeather) {
+      return debugParams.forceWeather as Weather
+    }
+    const season = debugParams.forceSeason || getCurrentSeason()
+    const config = getSeasonConfig(season)
+    // Use night weather if it's nighttime
+    if (isNightTime()) {
+      return 'night'
+    }
+    return config.defaultWeather as Weather
+  })
+
+  const seasonConfig = useMemo(() => getSeasonConfig(currentSeason), [currentSeason])
 
   const handleComplete = useCallback(() => {
     if (preferences.soundEnabled) {
@@ -25,7 +57,7 @@ function App() {
 
   const timer = useTimer({ onComplete: handleComplete })
 
-  // Apply theme
+  // Apply theme (dark mode)
   useEffect(() => {
     const root = document.documentElement
 
@@ -41,6 +73,14 @@ function App() {
       root.classList.toggle('dark', preferences.darkMode === 'dark')
     }
   }, [preferences.darkMode])
+
+  // Apply seasonal theme class
+  useEffect(() => {
+    const root = document.documentElement
+    // Remove all season classes first
+    root.classList.remove('season-spring', 'season-summer', 'season-autumn', 'season-winter')
+    root.classList.add(`season-${currentSeason}`)
+  }, [currentSeason])
 
   // Initialize audio context on first interaction
   useEffect(() => {
@@ -85,14 +125,44 @@ function App() {
     setPreferences((prev) => ({ ...prev, darkMode: theme }))
   }
 
+  const handleSeasonChange = (season: Season) => {
+    setCurrentSeason(season)
+    // Update weather to match season's default if not in debug with forced weather
+    if (!debugParams.forceWeather) {
+      const config = getSeasonConfig(season)
+      setCurrentWeather(isNightTime() ? 'night' : config.defaultWeather as Weather)
+    }
+  }
+
+  const handleWeatherChange = (weather: Weather) => {
+    setCurrentWeather(weather)
+  }
+
+  const handleDebugClose = () => {
+    setDebugMode(false)
+  }
+
   return (
-    <div className="min-h-full bg-white dark:bg-gray-900 transition-colors duration-300">
-      <div className="max-w-lg mx-auto px-4 py-8 md:py-12 flex flex-col min-h-screen">
+    <div
+      className="min-h-full transition-colors duration-500 relative overflow-hidden"
+      style={{ background: seasonConfig.colors.backgroundGradient }}
+    >
+      {/* Weather effects layer */}
+      <WeatherEffects weather={currentWeather} />
+
+      {/* Seasonal decorations layer */}
+      <SeasonalDecorations season={currentSeason} />
+
+      {/* Main content */}
+      <div className="relative z-10 max-w-lg mx-auto px-4 py-8 md:py-12 flex flex-col min-h-screen">
         {/* Header */}
         <header className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-light text-gray-800 dark:text-gray-100 tracking-tight">
             Time Timer
           </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-70">
+            {seasonConfig.name} Edition
+          </p>
         </header>
 
         {/* Timer Display - Interactive Dial */}
@@ -102,6 +172,7 @@ function App() {
             timeRemaining={timer.timeRemaining}
             state={timer.state}
             onDurationSet={handleDurationSet}
+            season={currentSeason}
           />
 
           {/* Controls */}
@@ -116,7 +187,7 @@ function App() {
         </main>
 
         {/* Settings */}
-        <footer className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
+        <footer className="mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-800/50">
           <Settings
             preferences={preferences}
             onSoundToggle={handleSoundToggle}
@@ -124,6 +195,17 @@ function App() {
           />
         </footer>
       </div>
+
+      {/* Debug Panel - only in debug mode */}
+      {debugMode && (
+        <DebugPanel
+          currentSeason={currentSeason}
+          currentWeather={currentWeather}
+          onSeasonChange={handleSeasonChange}
+          onWeatherChange={handleWeatherChange}
+          onClose={handleDebugClose}
+        />
+      )}
     </div>
   )
 }

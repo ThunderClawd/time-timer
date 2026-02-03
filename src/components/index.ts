@@ -1,3 +1,6 @@
 export { TimerDisplay } from './TimerDisplay'
 export { Controls } from './Controls'
 export { Settings } from './Settings'
+export { SeasonalDecorations } from './SeasonalDecorations'
+export { WeatherEffects } from './WeatherEffects'
+export { DebugPanel } from './DebugPanel'

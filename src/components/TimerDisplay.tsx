@@ -1,17 +1,19 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { formatTime, interpolateColor } from '../utils'
+import { formatTime } from '../utils'
 import type { TimerState } from '../hooks'
+import { getSeasonalTimerColor, getSeasonConfig, type Season } from '../themes/seasons'
 
 interface TimerDisplayProps {
   progress: number
   timeRemaining: number
   state: TimerState
   onDurationSet: (minutes: number) => void
+  season?: Season
 }
 
 const MAX_MINUTES = 60
 
-export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: TimerDisplayProps) {
+export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, season = 'spring' }: TimerDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationRef = useRef<number | null>(null)
@@ -21,6 +23,8 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
   const [isDragging, setIsDragging] = useState(false)
   const [settingMinutes, setSettingMinutes] = useState(0)
   const [canvasSize, setCanvasSize] = useState(320)
+
+  const seasonConfig = getSeasonConfig(season)
 
   // Calculate angle and minutes from pointer position
   const getMinutesFromPosition = useCallback((clientX: number, clientY: number): number => {
@@ -162,10 +166,11 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
       // Clear canvas
       ctx.clearRect(0, 0, size, size)
 
-      // Background circle (the "dial" background)
+      // Background circle (the "dial" background) - with seasonal tint
       ctx.beginPath()
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-      ctx.fillStyle = isDark ? '#1f2937' : '#f3f4f6'
+      const bgColor = isDark ? '#1f2937' : seasonConfig.colors.background
+      ctx.fillStyle = bgColor
       ctx.fill()
 
       // Draw tick marks around the edge
@@ -206,18 +211,20 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
 
       // Determine what slice to show
       let sliceMinutes = 0
-      let sliceColor = '#ef4444' // Red
+      let sliceColor = seasonConfig.colors.primary // Use seasonal color for idle/setting
 
       if (isDragging && state === 'idle') {
-        // While setting duration - show red slice based on drag
+        // While setting duration - show slice based on drag
         sliceMinutes = settingMinutes
+        sliceColor = seasonConfig.colors.primary
       } else if (state === 'running' || state === 'paused') {
-        // Timer running - show slice based on remaining time (with color based on progress)
+        // Timer running - show slice based on remaining time with seasonal colors
         sliceMinutes = timeRemaining / 60
-        sliceColor = interpolateColor(currentProgressRef.current)
+        sliceColor = getSeasonalTimerColor(currentProgressRef.current, season)
       } else if (state === 'idle' && settingMinutes > 0) {
         // Duration set but not started
         sliceMinutes = settingMinutes
+        sliceColor = seasonConfig.colors.primary
       }
 
       // Draw the time slice/wedge
@@ -282,24 +289,29 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
         ctx.fillStyle = 'rgba(0,0,0,0.2)'
         ctx.fill()
 
-        // Handle circle
+        // Handle circle - use seasonal accent color
         ctx.beginPath()
         ctx.arc(handleX, handleY, 12, 0, Math.PI * 2)
-        ctx.fillStyle = '#dc2626'
+        ctx.fillStyle = seasonConfig.colors.accent
         ctx.fill()
         ctx.strokeStyle = '#ffffff'
         ctx.lineWidth = 2
         ctx.stroke()
       }
 
-      // Pulse effect when completed
+      // Pulse effect when completed - use seasonal colors
       if (state === 'completed') {
         const pulsePhase = (Date.now() % 1000) / 1000
         const pulseAlpha = easeOutCubic(Math.sin(pulsePhase * Math.PI)) * 0.4
 
         ctx.beginPath()
         ctx.arc(centerX, centerY, radius + 10, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(239, 68, 68, ${pulseAlpha})`
+        // Extract RGB from seasonal end color for pulse
+        const pulseColor = seasonConfig.colors.timerColors.end
+        const r = parseInt(pulseColor.slice(1, 3), 16)
+        const g = parseInt(pulseColor.slice(3, 5), 16)
+        const b = parseInt(pulseColor.slice(5, 7), 16)
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${pulseAlpha})`
         ctx.lineWidth = 6
         ctx.stroke()
       }
@@ -314,7 +326,7 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [canvasSize, progress, state, isDragging, settingMinutes, timeRemaining])
+  }, [canvasSize, progress, state, isDragging, settingMinutes, timeRemaining, season, seasonConfig])
 
   // Update progress ref when props change
   useEffect(() => {
@@ -367,6 +379,17 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
     return ''
   }
 
+  // Dynamic text color based on state and season
+  const getTextColorClass = () => {
+    if (state === 'completed') {
+      return 'text-gray-800 dark:text-gray-100 animate-pulse-soft'
+    }
+    if (isDragging) {
+      return 'text-gray-700 dark:text-gray-200'
+    }
+    return 'text-gray-800 dark:text-gray-100'
+  }
+
   return (
     <div
       ref={containerRef}
@@ -384,15 +407,13 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet }: 
       />
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span
-          className={`text-4xl md:text-5xl font-light tabular-nums tracking-tight transition-colors
-            ${state === 'completed' ? 'text-red-500 animate-pulse-soft' : 'text-gray-800 dark:text-gray-100'}
-            ${isDragging ? 'text-red-600 dark:text-red-400' : ''}`}
+          className={`text-4xl md:text-5xl font-light tabular-nums tracking-tight transition-colors ${getTextColorClass()}`}
         >
           {getCenterText()}
         </span>
         {getSubText() && (
           <span className={`text-sm mt-2 uppercase tracking-wider
-            ${state === 'completed' ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+            ${state === 'completed' ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
             {getSubText()}
           </span>
         )}
