@@ -6,6 +6,8 @@ import { SettingsModal } from './components/SettingsModal'
 import { SeasonalDecorations } from './components/SeasonalDecorations'
 import { WeatherEffects } from './components/WeatherEffects'
 import { DebugPanel } from './components/DebugPanel'
+import { CompletionGlow } from './components/CompletionGlow'
+import { DayNightCycle } from './components/DayNightCycle'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -170,7 +172,13 @@ function App() {
           : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
       }}
     >
-      {/* Weather effects layer */}
+      {/* Completion glow layer - lowest z-index */}
+      <CompletionGlow isComplete={timer.state === 'completed'} />
+
+      {/* Day/Night cycle layer - behind weather */}
+      <DayNightCycle />
+
+      {/* Weather effects layer - on top of day/night cycle */}
       {preferences.weatherEffects && <WeatherEffects weather={currentWeather} />}
 
       {/* Seasonal decorations layer */}
@@ -200,6 +208,7 @@ function App() {
             onStart={handleStart}
             onPause={timer.pause}
             onResume={timer.resume}
+            onReset={handleReset}
             canStart={timer.totalDuration > 0}
           />
         </div>

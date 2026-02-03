@@ -353,63 +353,9 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
     });
   }, []);
 
-  // Draw night sky with moon and stars
+  // Draw night sky with stars (moon now rendered by DayNightCycle)
   const drawNight = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      // Draw moon
-      const moon = moonRef.current;
-      if (moon) {
-        const moonX = (moon.x / 100) * width;
-        const moonY = (moon.y / 100) * height;
-
-        // Moon glow (outer)
-        const outerGlow = ctx.createRadialGradient(
-          moonX,
-          moonY,
-          moon.size * 0.5,
-          moonX,
-          moonY,
-          moon.size * 3
-        );
-        outerGlow.addColorStop(0, `rgba(255, 250, 230, ${moon.glowIntensity})`);
-        outerGlow.addColorStop(0.3, `rgba(255, 250, 230, ${moon.glowIntensity * 0.4})`);
-        outerGlow.addColorStop(1, 'rgba(255, 250, 230, 0)');
-        ctx.beginPath();
-        ctx.fillStyle = outerGlow;
-        ctx.arc(moonX, moonY, moon.size * 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Moon body
-        const moonGradient = ctx.createRadialGradient(
-          moonX - moon.size * 0.2,
-          moonY - moon.size * 0.2,
-          0,
-          moonX,
-          moonY,
-          moon.size
-        );
-        moonGradient.addColorStop(0, 'rgba(255, 252, 240, 0.95)');
-        moonGradient.addColorStop(0.7, 'rgba(250, 245, 220, 0.9)');
-        moonGradient.addColorStop(1, 'rgba(240, 235, 210, 0.85)');
-
-        ctx.beginPath();
-        ctx.fillStyle = moonGradient;
-        ctx.arc(moonX, moonY, moon.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Subtle moon craters/texture
-        ctx.fillStyle = 'rgba(220, 215, 200, 0.15)';
-        ctx.beginPath();
-        ctx.arc(moonX + moon.size * 0.2, moonY - moon.size * 0.1, moon.size * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(moonX - moon.size * 0.25, moonY + moon.size * 0.3, moon.size * 0.1, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(moonX + moon.size * 0.3, moonY + moon.size * 0.25, moon.size * 0.08, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
       // Draw stars with twinkling
       particlesRef.current.forEach(particle => {
         const isBright = particle.type === 'brightStar';
@@ -496,64 +442,9 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
     []
   );
 
-  // Draw sunny effect with rays and dust particles
+  // Draw sunny effect with dust particles (sun now rendered by DayNightCycle)
   const drawSunny = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      // Sun position (top right)
-      const sunX = width * 0.85;
-      const sunY = height * 0.08;
-      const sunRadius = Math.min(width, height) * 0.08;
-
-      // Outer glow layers
-      for (let i = 3; i >= 0; i--) {
-        const radius = sunRadius * (3 + i * 1.5);
-        const gradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, radius);
-        const alpha = 0.03 + i * 0.02;
-        gradient.addColorStop(0, `rgba(255, 230, 150, ${alpha})`);
-        gradient.addColorStop(0.5, `rgba(255, 220, 100, ${alpha * 0.5})`);
-        gradient.addColorStop(1, 'rgba(255, 220, 100, 0)');
-        ctx.beginPath();
-        ctx.fillStyle = gradient;
-        ctx.arc(sunX, sunY, radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Sun core (partial, as if just peeking)
-      const coreGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunRadius);
-      coreGradient.addColorStop(0, 'rgba(255, 250, 200, 0.3)');
-      coreGradient.addColorStop(0.7, 'rgba(255, 230, 150, 0.15)');
-      coreGradient.addColorStop(1, 'rgba(255, 220, 100, 0.05)');
-      ctx.beginPath();
-      ctx.fillStyle = coreGradient;
-      ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Subtle light rays
-      const rayCount = 8;
-      const time = Date.now() * 0.0003;
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-
-      for (let i = 0; i < rayCount; i++) {
-        const angle = (i / rayCount) * Math.PI * 2 + time;
-        const rayLength = sunRadius * (4 + Math.sin(time * 2 + i) * 1.5);
-        const rayWidth = Math.PI / 20;
-
-        const gradient = ctx.createRadialGradient(sunX, sunY, sunRadius * 0.5, sunX, sunY, rayLength);
-        gradient.addColorStop(0, 'rgba(255, 240, 180, 0.08)');
-        gradient.addColorStop(0.5, 'rgba(255, 235, 150, 0.03)');
-        gradient.addColorStop(1, 'rgba(255, 230, 100, 0)');
-
-        ctx.beginPath();
-        ctx.fillStyle = gradient;
-        ctx.moveTo(sunX, sunY);
-        ctx.arc(sunX, sunY, rayLength, angle - rayWidth, angle + rayWidth);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      ctx.restore();
-
       // Floating dust particles in sunbeam
       const beamCenterX = width * 0.5;
       const beamWidth = width * 0.4;
