@@ -9,11 +9,12 @@ interface TimerDisplayProps {
   state: TimerState
   onDurationSet: (minutes: number) => void
   season?: Season
+  seasonalThemeEnabled?: boolean
 }
 
 const MAX_MINUTES = 60
 
-export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, season = 'spring' }: TimerDisplayProps) {
+export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, season = 'spring', seasonalThemeEnabled = true }: TimerDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationRef = useRef<number | null>(null)
@@ -162,6 +163,8 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       }
 
       const isDark = document.documentElement.classList.contains('dark')
+      const timerColors = seasonConfig.colors.timerDisplay
+      const useSeasonalColors = seasonalThemeEnabled
 
       // Clear canvas
       ctx.clearRect(0, 0, size, size)
@@ -169,11 +172,19 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       // Background circle (the "dial" background) - with seasonal tint
       ctx.beginPath()
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-      const bgColor = isDark ? '#1f2937' : seasonConfig.colors.background
+      let bgColor: string
+      if (useSeasonalColors) {
+        bgColor = isDark ? timerColors.backgroundDark : timerColors.background
+      } else {
+        bgColor = isDark ? '#1f2937' : '#f3f4f6'
+      }
       ctx.fillStyle = bgColor
       ctx.fill()
 
       // Draw tick marks around the edge
+      const tickColor = useSeasonalColors
+        ? (isDark ? timerColors.tickMarksDark : timerColors.tickMarks)
+        : (isDark ? '#4b5563' : '#9ca3af')
       for (let i = 0; i < 60; i++) {
         const angle = (i / 60) * Math.PI * 2 - Math.PI / 2
         const isMajor = i % 5 === 0
@@ -189,14 +200,17 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
         ctx.beginPath()
         ctx.moveTo(x1, y1)
         ctx.lineTo(x2, y2)
-        ctx.strokeStyle = isDark ? '#4b5563' : '#9ca3af'
+        ctx.strokeStyle = tickColor
         ctx.lineWidth = tickWidth
         ctx.stroke()
       }
 
       // Draw minute numbers at major tick marks
       ctx.font = `${size * 0.035}px system-ui, -apple-system, sans-serif`
-      ctx.fillStyle = isDark ? '#9ca3af' : '#6b7280'
+      const numberColor = useSeasonalColors
+        ? (isDark ? timerColors.numbersDark : timerColors.numbers)
+        : (isDark ? '#9ca3af' : '#6b7280')
+      ctx.fillStyle = numberColor
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
 
@@ -211,20 +225,28 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
 
       // Determine what slice to show
       let sliceMinutes = 0
-      let sliceColor = seasonConfig.colors.primary // Use seasonal color for idle/setting
+      let sliceColor: string
+      const defaultSliceColor = useSeasonalColors ? timerColors.progressStart : '#60a5fa'
 
       if (isDragging && state === 'idle') {
         // While setting duration - show slice based on drag
         sliceMinutes = settingMinutes
-        sliceColor = seasonConfig.colors.primary
+        sliceColor = useSeasonalColors ? timerColors.progressStart : '#60a5fa'
       } else if (state === 'running' || state === 'paused') {
         // Timer running - show slice based on remaining time with seasonal colors
         sliceMinutes = timeRemaining / 60
-        sliceColor = getSeasonalTimerColor(currentProgressRef.current, season)
+        if (useSeasonalColors) {
+          sliceColor = getSeasonalTimerColor(currentProgressRef.current, season)
+        } else {
+          // Default blue gradient based on progress
+          sliceColor = currentProgressRef.current > 0.5 ? '#60a5fa' : '#ef4444'
+        }
       } else if (state === 'idle' && settingMinutes > 0) {
         // Duration set but not started
         sliceMinutes = settingMinutes
-        sliceColor = seasonConfig.colors.primary
+        sliceColor = useSeasonalColors ? timerColors.progressStart : '#60a5fa'
+      } else {
+        sliceColor = defaultSliceColor
       }
 
       // Draw the time slice/wedge
@@ -259,7 +281,13 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       // Inner circle (center of the dial)
       ctx.beginPath()
       ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2)
-      ctx.fillStyle = isDark ? '#111827' : '#ffffff'
+      let innerColor: string
+      if (useSeasonalColors) {
+        innerColor = isDark ? timerColors.innerCircleDark : timerColors.innerCircle
+      } else {
+        innerColor = isDark ? '#111827' : '#ffffff'
+      }
+      ctx.fillStyle = innerColor
       ctx.fill()
 
       // Inner circle border
@@ -326,7 +354,7 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [canvasSize, progress, state, isDragging, settingMinutes, timeRemaining, season, seasonConfig])
+  }, [canvasSize, progress, state, isDragging, settingMinutes, timeRemaining, season, seasonConfig, seasonalThemeEnabled])
 
   // Update progress ref when props change
   useEffect(() => {

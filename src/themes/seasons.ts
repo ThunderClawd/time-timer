@@ -15,6 +15,22 @@ export interface SeasonConfig {
       mid2: string;
       end: string;
     };
+    timerDisplay: {
+      background: string;
+      backgroundDark: string;
+      innerCircle: string;
+      innerCircleDark: string;
+      progressStart: string;
+      progressEnd: string;
+      tickMarks: string;
+      tickMarksDark: string;
+      numbers: string;
+      numbersDark: string;
+      text: string;
+      textDark: string;
+      textSecondary: string;
+      textSecondaryDark: string;
+    };
   };
   decorations: {
     elements: string[];
@@ -39,6 +55,22 @@ export const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
         mid1: '#98FB98', // Pale green
         mid2: '#FFB6C1', // Light pink
         end: '#FF69B4', // Hot pink
+      },
+      timerDisplay: {
+        background: '#E8F5E9', // Soft pastel green tint
+        backgroundDark: '#1B2E1B', // Dark green tint
+        innerCircle: '#FAFFF8', // Very light green-white
+        innerCircleDark: '#0F1A0F', // Very dark green
+        progressStart: '#90EE90', // Fresh green
+        progressEnd: '#FFB6C1', // Soft pink
+        tickMarks: '#81C784', // Medium green
+        tickMarksDark: '#4CAF50', // Brighter green for dark
+        numbers: '#2E7D32', // Dark green for contrast
+        numbersDark: '#A5D6A7', // Light green for dark mode
+        text: '#1B5E20', // Very dark green
+        textDark: '#C8E6C9', // Light pastel green
+        textSecondary: '#4CAF50', // Medium green
+        textSecondaryDark: '#81C784', // Light medium green
       },
     },
     decorations: {
@@ -69,6 +101,22 @@ export const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
         mid2: '#FF7F50', // Coral
         end: '#FF4500', // Orange red
       },
+      timerDisplay: {
+        background: '#FFF8E1', // Warm golden tint
+        backgroundDark: '#2D2410', // Dark golden brown
+        innerCircle: '#FFFEF8', // Very light warm white
+        innerCircleDark: '#1A1508', // Very dark warm
+        progressStart: '#FFD700', // Golden yellow
+        progressEnd: '#87CEEB', // Sky blue
+        tickMarks: '#FFB300', // Amber
+        tickMarksDark: '#FFC107', // Brighter amber for dark
+        numbers: '#E65100', // Deep orange for contrast
+        numbersDark: '#FFE082', // Light amber for dark mode
+        text: '#BF360C', // Deep burnt orange
+        textDark: '#FFECB3', // Light cream
+        textSecondary: '#FF8F00', // Orange amber
+        textSecondaryDark: '#FFD54F', // Light golden
+      },
     },
     decorations: {
       elements: ['sun', 'cloud', 'seashell', 'palm-leaf'],
@@ -96,6 +144,22 @@ export const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
         mid1: '#D2691E', // Chocolate
         mid2: '#CD5C5C', // Indian red
         end: '#8B0000', // Dark red
+      },
+      timerDisplay: {
+        background: '#FBE9E7', // Warm orange/brown tint
+        backgroundDark: '#2D1B12', // Dark brown
+        innerCircle: '#FFF8F0', // Very light warm cream
+        innerCircleDark: '#1A0F08', // Very dark brown
+        progressStart: '#DAA520', // Golden orange
+        progressEnd: '#8B0000', // Deep red
+        tickMarks: '#BF360C', // Deep orange
+        tickMarksDark: '#FF7043', // Brighter orange for dark
+        numbers: '#6D4C41', // Dark brown for contrast
+        numbersDark: '#FFAB91', // Light peach for dark mode
+        text: '#4E342E', // Very dark brown
+        textDark: '#FFCCBC', // Light peach cream
+        textSecondary: '#8D6E63', // Medium brown
+        textSecondaryDark: '#BCAAA4', // Light brown
       },
     },
     decorations: {
@@ -125,6 +189,22 @@ export const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
         mid1: '#B0E0E6', // Powder blue
         mid2: '#DDA0DD', // Plum
         end: '#4169E1', // Royal blue
+      },
+      timerDisplay: {
+        background: '#E3F2FD', // Cool blue/white tint
+        backgroundDark: '#0D1B2A', // Deep blue-black
+        innerCircle: '#F8FDFF', // Very light icy white
+        innerCircleDark: '#051014', // Very dark blue
+        progressStart: '#87CEEB', // Icy blue
+        progressEnd: '#E0E0E0', // Silver white
+        tickMarks: '#90CAF9', // Light blue
+        tickMarksDark: '#64B5F6', // Brighter blue for dark
+        numbers: '#1565C0', // Deep blue for contrast
+        numbersDark: '#90CAF9', // Light blue for dark mode
+        text: '#0D47A1', // Very deep blue
+        textDark: '#BBDEFB', // Light sky blue
+        textSecondary: '#1976D2', // Medium blue
+        textSecondaryDark: '#64B5F6', // Light medium blue
       },
     },
     decorations: {

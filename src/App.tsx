@@ -125,6 +125,18 @@ function App() {
     setPreferences((prev) => ({ ...prev, darkMode: theme }))
   }
 
+  const handleSeasonalThemeToggle = () => {
+    const newValue = !preferences.seasonalTheme
+    savePreferences({ seasonalTheme: newValue })
+    setPreferences((prev) => ({ ...prev, seasonalTheme: newValue }))
+  }
+
+  const handleWeatherEffectsToggle = () => {
+    const newValue = !preferences.weatherEffects
+    savePreferences({ weatherEffects: newValue })
+    setPreferences((prev) => ({ ...prev, weatherEffects: newValue }))
+  }
+
   const handleSeasonChange = (season: Season) => {
     setCurrentSeason(season)
     // Update weather to match season's default if not in debug with forced weather
@@ -145,13 +157,17 @@ function App() {
   return (
     <div
       className="min-h-full transition-colors duration-500 relative overflow-hidden"
-      style={{ background: seasonConfig.colors.backgroundGradient }}
+      style={{
+        background: preferences.seasonalTheme
+          ? seasonConfig.colors.backgroundGradient
+          : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
+      }}
     >
       {/* Weather effects layer */}
-      <WeatherEffects weather={currentWeather} />
+      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} />}
 
       {/* Seasonal decorations layer */}
-      <SeasonalDecorations season={currentSeason} />
+      {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
 
       {/* Main content */}
       <div className="relative z-10 max-w-lg mx-auto px-4 py-8 md:py-12 flex flex-col min-h-screen">
@@ -173,6 +189,7 @@ function App() {
             state={timer.state}
             onDurationSet={handleDurationSet}
             season={currentSeason}
+            seasonalThemeEnabled={preferences.seasonalTheme}
           />
 
           {/* Controls */}
@@ -192,6 +209,8 @@ function App() {
             preferences={preferences}
             onSoundToggle={handleSoundToggle}
             onThemeChange={handleThemeChange}
+            onSeasonalThemeToggle={handleSeasonalThemeToggle}
+            onWeatherEffectsToggle={handleWeatherEffectsToggle}
           />
         </footer>
       </div>

@@ -4,12 +4,16 @@ export interface Preferences {
   soundEnabled: boolean
   darkMode: 'auto' | 'light' | 'dark'
   lastDuration: number
+  seasonalTheme: boolean
+  weatherEffects: boolean
 }
 
 const defaultPreferences: Preferences = {
   soundEnabled: true,
   darkMode: 'auto',
   lastDuration: 5,
+  seasonalTheme: true,
+  weatherEffects: true,
 }
 
 export function loadPreferences(): Preferences {
