@@ -33,9 +33,3 @@ const localStorageMock = {
   clear: vi.fn(),
 }
 vi.stubGlobal('localStorage', localStorageMock)
-
-// Mock navigator.vibrate
-vi.stubGlobal('navigator', {
-  ...navigator,
-  vibrate: vi.fn(),
-})
