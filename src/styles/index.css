@@ -7,6 +7,44 @@
   --timer-yellow: #eab308;
   --timer-orange: #f97316;
   --timer-red: #ef4444;
+
+  /* Seasonal color variables */
+  --season-primary: #90EE90;
+  --season-secondary: #FFB6C1;
+  --season-accent: #FFFACD;
+  --season-background: #F0FFF0;
+}
+
+/* Spring theme */
+.season-spring {
+  --season-primary: #90EE90;
+  --season-secondary: #FFB6C1;
+  --season-accent: #FFFACD;
+  --season-background: #F0FFF0;
+}
+
+/* Summer theme */
+.season-summer {
+  --season-primary: #FFD700;
+  --season-secondary: #87CEEB;
+  --season-accent: #FF7F50;
+  --season-background: #FFFAF0;
+}
+
+/* Autumn theme */
+.season-autumn {
+  --season-primary: #D2691E;
+  --season-secondary: #CD853F;
+  --season-accent: #8B4513;
+  --season-background: #FFF8DC;
+}
+
+/* Winter theme */
+.season-winter {
+  --season-primary: #B0E0E6;
+  --season-secondary: #F0F8FF;
+  --season-accent: #C0C0C0;
+  --season-background: #F8F8FF;
 }
 
 * {
@@ -42,4 +80,157 @@ body {
   transition-property: color, background-color, border-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
+}
+
+/* Seasonal animation keyframes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110%) rotate(360deg);
+    opacity: 0.5;
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translateX(-10%);
+  }
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+/* Utility animations */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-sway {
+  animation: sway 4s ease-in-out infinite;
+}
+
+.animate-fall {
+  animation: fall 8s linear infinite;
+}
+
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.animate-drift {
+  animation: drift 30s linear infinite;
+}
+
+/* Decoration positioning helpers */
+.decoration-top-left {
+  position: absolute;
+  top: 10%;
+  left: 5%;
+}
+
+.decoration-top-right {
+  position: absolute;
+  top: 10%;
+  right: 5%;
+}
+
+.decoration-bottom-left {
+  position: absolute;
+  bottom: 10%;
+  left: 5%;
+}
+
+.decoration-bottom-right {
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+}
+
+/* Weather overlay effects */
+.weather-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.weather-sunny {
+  background: radial-gradient(ellipse at top right, rgba(255, 215, 0, 0.1) 0%, transparent 50%);
+}
+
+.weather-rainy {
+  background: linear-gradient(180deg, rgba(100, 149, 237, 0.05) 0%, transparent 100%);
+}
+
+.weather-snowy {
+  background: linear-gradient(180deg, rgba(240, 248, 255, 0.1) 0%, transparent 100%);
+}
+
+.weather-cloudy {
+  background: linear-gradient(180deg, rgba(169, 169, 169, 0.08) 0%, transparent 50%);
+}
+
+.weather-night {
+  background: radial-gradient(ellipse at center, rgba(25, 25, 112, 0.05) 0%, rgba(25, 25, 112, 0.15) 100%);
+}
+
+/* Cozy glow effect for decorations */
+.cozy-glow {
+  filter: drop-shadow(0 0 8px rgba(255, 200, 100, 0.3));
+}
+
+/* Seasonal decoration styling */
+.seasonal-decoration {
+  transition: transform 0.3s ease, opacity 0.5s ease;
+}
+
+.seasonal-decoration:hover {
+  transform: scale(1.1);
+}
+
+/* Dark mode adjustments for seasonal themes */
+.dark .season-spring {
+  --season-background: #1a2f1a;
+}
+
+.dark .season-summer {
+  --season-background: #2a2a1a;
+}
+
+.dark .season-autumn {
+  --season-background: #2a1f1a;
+}
+
+.dark .season-winter {
+  --season-background: #1a1a2a;
 }
