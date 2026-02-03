@@ -17,6 +17,8 @@ describe('storage', () => {
         soundEnabled: true,
         darkMode: 'auto',
         lastDuration: 5,
+        seasonalTheme: true,
+        weatherEffects: true,
       })
     })
 
@@ -61,6 +63,8 @@ describe('storage', () => {
         soundEnabled: true,
         darkMode: 'auto',
         lastDuration: 5,
+        seasonalTheme: true,
+        weatherEffects: true,
       })
     })
 
@@ -73,6 +77,8 @@ describe('storage', () => {
         soundEnabled: true,
         darkMode: 'auto',
         lastDuration: 5,
+        seasonalTheme: true,
+        weatherEffects: true,
       })
     })
   })
