@@ -5,10 +5,7 @@ import { getCurrentSeason } from './seasons';
 import type {
   DailyTheme,
   DailyThemeColors,
-  BackgroundEffect,
-  DecorativeElement,
   ThemeCategory,
-  HolidayTheme,
 } from './dailyThemes.types';
 import { HOLIDAYS } from './dailyThemes.types';
 
@@ -1605,5 +1602,10 @@ export function getThemeForDate(date: Date): DailyTheme {
   // Map day of year to theme index (ensuring variety across the season)
   const themeIndex = (dayOfYear - 1) % seasonThemes.length;
 
-  return seasonThemes[themeIndex];
+  const theme = seasonThemes[themeIndex];
+  if (!theme) {
+    // Fallback to first theme of season (should never happen)
+    return seasonThemes[0]!;
+  }
+  return theme;
 }

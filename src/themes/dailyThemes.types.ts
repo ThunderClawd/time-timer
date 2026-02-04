@@ -50,6 +50,7 @@ export type DecorativeElement =
   | 'fireworks'
   | 'crystals'
   | 'mushrooms'
+  | 'leaves'
   | 'none';
 
 export interface DailyThemeColors {

@@ -2,7 +2,7 @@
 
 import type { CollectedThemes } from '../themes/dailyThemes.types';
 import type { DailyTheme } from '../themes/dailyThemes.types';
-import { getThemeForDate, getThemeById } from '../themes/dailyThemes';
+import { getThemeForDate, getThemeById, getAllThemes } from '../themes/dailyThemes';
 
 export const THEME_COLLECTION_STORAGE_KEY = 'time-timer-theme-collection';
 
@@ -114,7 +114,6 @@ export function clearCollection(): void {
  * Returns the number of newly unlocked themes
  */
 export function unlockAllThemes(): number {
-  const { getAllThemes } = require('../themes/dailyThemes');
   const allThemes = getAllThemes();
   const collection = loadThemeCollection();
   let newlyUnlocked = 0;

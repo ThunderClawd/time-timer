@@ -27,7 +27,7 @@ import {
 import type { Weather } from './themes/weather'
 import { requestLocation, type GeolocationError } from './utils/geolocation'
 import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
-import { autoUnlockTodayTheme, getCurrentEffectiveTheme, setActiveTheme, unlockAllThemes } from './utils/themeCollection'
+import { autoUnlockTodayTheme, setActiveTheme, unlockAllThemes } from './utils/themeCollection'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
