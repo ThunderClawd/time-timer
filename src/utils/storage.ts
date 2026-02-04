@@ -6,6 +6,7 @@ export interface Preferences {
   lastDuration: number
   seasonalTheme: boolean
   weatherEffects: boolean
+  useRealWeather: boolean
 }
 
 const defaultPreferences: Preferences = {
@@ -14,6 +15,7 @@ const defaultPreferences: Preferences = {
   lastDuration: 5,
   seasonalTheme: true,
   weatherEffects: true,
+  useRealWeather: false,
 }
 
 export function loadPreferences(): Preferences {
