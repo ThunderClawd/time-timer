@@ -143,10 +143,10 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
 
     const centerX = size / 2
     const centerY = size / 2
-    const radius = size / 2 - 20
+    const radius = Math.max(size / 2 - 20, 50) // Ensure radius is always positive
     const innerRadius = radius * 0.55
     const tickOuterRadius = radius - 5
-    const tickInnerRadius = radius - 20
+    const tickInnerRadius = Math.max(radius - 20, 30) // Ensure tick radius is always positive
 
     function easeOutCubic(t: number): number {
       return 1 - Math.pow(1 - t, 3)
