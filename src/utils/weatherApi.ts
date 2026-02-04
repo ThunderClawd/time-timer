@@ -71,9 +71,9 @@ export async function fetchWeather(
 }
 
 /**
- * Check if cached weather data is still fresh (less than 30 minutes old)
+ * Check if cached weather data is still fresh (less than 10 minutes old)
  */
-export function isWeatherDataFresh(timestamp: number): boolean {
-  const THIRTY_MINUTES = 30 * 60 * 1000;
-  return Date.now() - timestamp < THIRTY_MINUTES;
+export function isWeatherDataFresh(timestamp: number, maxAgeMinutes: number = 10): boolean {
+  const maxAgeMs = maxAgeMinutes * 60 * 1000;
+  return Date.now() - timestamp < maxAgeMs;
 }

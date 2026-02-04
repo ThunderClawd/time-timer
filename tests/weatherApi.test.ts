@@ -118,24 +118,55 @@ describe('Weather API', () => {
   });
 
   describe('isWeatherDataFresh', () => {
-    it('returns true for recent data (less than 30 minutes)', () => {
-      const recentTimestamp = Date.now() - 15 * 60 * 1000; // 15 minutes ago
+    it('returns true for recent data (less than 10 minutes) with default', () => {
+      const recentTimestamp = Date.now() - 5 * 60 * 1000; // 5 minutes ago
       expect(isWeatherDataFresh(recentTimestamp)).toBe(true);
     });
 
-    it('returns false for old data (more than 30 minutes)', () => {
-      const oldTimestamp = Date.now() - 35 * 60 * 1000; // 35 minutes ago
+    it('returns false for old data (more than 10 minutes) with default', () => {
+      const oldTimestamp = Date.now() - 15 * 60 * 1000; // 15 minutes ago
       expect(isWeatherDataFresh(oldTimestamp)).toBe(false);
     });
 
-    it('returns true for data exactly at 29 minutes', () => {
-      const timestamp = Date.now() - 29 * 60 * 1000;
+    it('returns true for data exactly at 9 minutes', () => {
+      const timestamp = Date.now() - 9 * 60 * 1000;
       expect(isWeatherDataFresh(timestamp)).toBe(true);
     });
 
-    it('returns false for data exactly at 31 minutes', () => {
-      const timestamp = Date.now() - 31 * 60 * 1000;
+    it('returns false for data exactly at 11 minutes', () => {
+      const timestamp = Date.now() - 11 * 60 * 1000;
       expect(isWeatherDataFresh(timestamp)).toBe(false);
+    });
+
+    it('returns true for data at boundary (9:59)', () => {
+      const timestamp = Date.now() - (9 * 60 + 59) * 1000;
+      expect(isWeatherDataFresh(timestamp)).toBe(true);
+    });
+
+    it('returns false for data just past boundary (10:01)', () => {
+      const timestamp = Date.now() - (10 * 60 + 1) * 1000;
+      expect(isWeatherDataFresh(timestamp)).toBe(false);
+    });
+
+    it('supports custom max age in minutes', () => {
+      const timestamp = Date.now() - 3 * 60 * 1000; // 3 minutes ago
+      expect(isWeatherDataFresh(timestamp, 5)).toBe(true); // Fresh within 5 min
+      expect(isWeatherDataFresh(timestamp, 2)).toBe(false); // Stale beyond 2 min
+    });
+
+    it('returns true for data just created', () => {
+      const timestamp = Date.now() - 1000; // 1 second ago
+      expect(isWeatherDataFresh(timestamp)).toBe(true);
+    });
+
+    it('returns false for very old data', () => {
+      const timestamp = Date.now() - 60 * 60 * 1000; // 1 hour ago
+      expect(isWeatherDataFresh(timestamp)).toBe(false);
+    });
+
+    it('handles edge case of future timestamp gracefully', () => {
+      const futureTimestamp = Date.now() + 5 * 60 * 1000; // 5 min in future
+      expect(isWeatherDataFresh(futureTimestamp)).toBe(true); // Should still be "fresh"
     });
   });
 });
