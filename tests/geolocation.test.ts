@@ -3,7 +3,6 @@ import {
   isGeolocationSupported,
   requestLocation,
   getGeolocationErrorMessage,
-  type GeolocationResult,
 } from '../src/utils/geolocation';
 
 describe('Geolocation', () => {
