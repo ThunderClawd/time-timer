@@ -1,5 +1,9 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import type { Preferences } from '../utils'
+import type { GeolocationError } from '../utils/geolocation'
+import type { WeatherData } from '../utils/weatherApi'
+import { getGeolocationErrorMessage } from '../utils/geolocation'
+import { LocationMapPicker } from './LocationMapPicker'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -9,8 +13,13 @@ interface SettingsModalProps {
   onThemeChange: (theme: 'auto' | 'light' | 'dark') => void
   onSeasonalThemeToggle: () => void
   onWeatherEffectsToggle: () => void
+  onRealWeatherToggle: () => void
+  onManualLocationSet: (latitude: number, longitude: number) => void
+  onManualLocationClear: () => void
   onReset: () => void
   canReset: boolean
+  locationError: GeolocationError | null
+  weatherData: WeatherData | null
 }
 
 export function SettingsModal({
@@ -21,9 +30,18 @@ export function SettingsModal({
   onThemeChange,
   onSeasonalThemeToggle,
   onWeatherEffectsToggle,
+  onRealWeatherToggle,
+  onManualLocationSet,
+  onManualLocationClear,
   onReset,
   canReset,
+  locationError,
+  weatherData,
 }: SettingsModalProps) {
+  const [showManualLocation, setShowManualLocation] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(false)
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
   // Handle ESC key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -151,6 +169,134 @@ export function SettingsModal({
             <ToggleSwitch enabled={preferences.weatherEffects} onToggle={onWeatherEffectsToggle} />
           </section>
 
+          {/* Use Real Weather Toggle */}
+          <section>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <LocationIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Use Real Weather</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Based on your location
+                  </p>
+                </div>
+              </div>
+              <ToggleSwitch enabled={preferences.useRealWeather} onToggle={onRealWeatherToggle} />
+            </div>
+            
+            {/* Manual location section */}
+            {preferences.useRealWeather && (
+              <div className="mt-3 space-y-2">
+                {/* Manual location display/input */}
+                {preferences.manualLocation ? (
+                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        📍 Manual: {preferences.manualLocation.latitude.toFixed(4)}, {preferences.manualLocation.longitude.toFixed(4)}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowMapPicker(true)}
+                          className="text-xs text-green-600 dark:text-green-400 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={onManualLocationClear}
+                          className="text-xs text-green-600 dark:text-green-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Location error message with manual location option */}
+                    {locationError && (
+                      <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+                        <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                          {getGeolocationErrorMessage(locationError)}
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowMapPicker(true)}
+                            className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
+                          >
+                            🗺️ Select on map
+                          </button>
+                          <span className="text-xs text-red-400 dark:text-red-500">or</span>
+                          <button
+                            onClick={() => setShowManualLocation(!showManualLocation)}
+                            className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
+                          >
+                            {showManualLocation ? '✕ Cancel' : '+ Enter coordinates'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Manual location input form */}
+                    {showManualLocation && (
+                      <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 space-y-2">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          Enter coordinates:
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            step="0.0001"
+                            placeholder="Latitude"
+                            value={latitude}
+                            onChange={(e) => setLatitude(e.target.value)}
+                            className="px-2 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                          <input
+                            type="number"
+                            step="0.0001"
+                            placeholder="Longitude"
+                            value={longitude}
+                            onChange={(e) => setLongitude(e.target.value)}
+                            className="px-2 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const lat = parseFloat(latitude)
+                            const lon = parseFloat(longitude)
+                            if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                              onManualLocationSet(lat, lon)
+                              setShowManualLocation(false)
+                              setLatitude('')
+                              setLongitude('')
+                            }
+                          }}
+                          className="w-full py-1.5 px-3 text-xs font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                        >
+                          Set Location
+                        </button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Example: Helsinki is 60.1699, 24.9384
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Weather data display */}
+                {weatherData && !locationError && (
+                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      Current: {weatherData.temperature}°C · {weatherData.weatherType}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* Reset Timer */}
           {canReset && (
             <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -175,6 +321,17 @@ export function SettingsModal({
           )}
         </div>
       </div>
+
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <LocationMapPicker
+          initialPosition={preferences.manualLocation}
+          onLocationSelect={(lat, lng) => {
+            onManualLocationSet(lat, lng)
+          }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   )
 }
@@ -291,6 +448,15 @@ function WeatherIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+    </svg>
+  )
+}
+
+function LocationIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   )
 }

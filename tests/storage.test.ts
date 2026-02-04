@@ -19,6 +19,8 @@ describe('storage', () => {
         lastDuration: 5,
         seasonalTheme: true,
         weatherEffects: true,
+        useRealWeather: false,
+        manualLocation: undefined,
       })
     })
 
@@ -65,6 +67,8 @@ describe('storage', () => {
         lastDuration: 5,
         seasonalTheme: true,
         weatherEffects: true,
+        useRealWeather: false,
+        manualLocation: undefined,
       })
     })
 
@@ -79,6 +83,8 @@ describe('storage', () => {
         lastDuration: 5,
         seasonalTheme: true,
         weatherEffects: true,
+        useRealWeather: false,
+        manualLocation: undefined,
       })
     })
   })

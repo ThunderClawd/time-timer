@@ -6,6 +6,8 @@ export interface Preferences {
   lastDuration: number
   seasonalTheme: boolean
   weatherEffects: boolean
+  useRealWeather: boolean
+  manualLocation?: { latitude: number; longitude: number }
 }
 
 const defaultPreferences: Preferences = {
@@ -14,6 +16,8 @@ const defaultPreferences: Preferences = {
   lastDuration: 5,
   seasonalTheme: true,
   weatherEffects: true,
+  useRealWeather: false,
+  manualLocation: undefined,
 }
 
 export function loadPreferences(): Preferences {

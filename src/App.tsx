@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { TimerDisplay } from './components'
 import { SettingsButton } from './components/SettingsButton'
 import { StartStopButton } from './components/StartStopButton'
@@ -23,11 +23,18 @@ import {
   type Season,
 } from './themes/seasons'
 import type { Weather } from './themes/weather'
+import { requestLocation, type GeolocationError } from './utils/geolocation'
+import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
   const [selectedMinutes, setSelectedMinutes] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Real weather state
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
+  const [locationError, setLocationError] = useState<GeolocationError | null>(null)
+  const weatherFetchInterval = useRef<number | null>(null)
 
   // Seasonal theme state
   const debugParams = useMemo(() => getDebugParams(), [])
@@ -99,6 +106,35 @@ function App() {
     }
   }, [])
 
+  // Refresh real weather data every 30 minutes
+  useEffect(() => {
+    if (!preferences.useRealWeather || !weatherData) return
+
+    const refreshWeather = async () => {
+      // Only refresh if data is stale
+      if (!isWeatherDataFresh(weatherData.timestamp)) {
+        const locationResult = await requestLocation()
+        if (locationResult.success && locationResult.coords) {
+          const weather = await fetchWeather(locationResult.coords)
+          if (weather) {
+            setWeatherData(weather)
+            setCurrentWeather(weather.weatherType)
+          }
+        }
+      }
+    }
+
+    // Set up interval to check every 5 minutes (actual refresh only if data is stale)
+    weatherFetchInterval.current = setInterval(refreshWeather, 5 * 60 * 1000)
+
+    return () => {
+      if (weatherFetchInterval.current) {
+        clearInterval(weatherFetchInterval.current)
+        weatherFetchInterval.current = null
+      }
+    }
+  }, [preferences.useRealWeather, weatherData])
+
   // Handle duration set from the dial
   const handleDurationSet = useCallback((minutes: number) => {
     setSelectedMinutes(minutes)
@@ -137,6 +173,87 @@ function App() {
     const newValue = !preferences.weatherEffects
     savePreferences({ weatherEffects: newValue })
     setPreferences((prev) => ({ ...prev, weatherEffects: newValue }))
+  }
+
+  const handleRealWeatherToggle = async () => {
+    const newValue = !preferences.useRealWeather
+    
+    if (newValue) {
+      // Enabling real weather - try automatic location first
+      setLocationError(null)
+      
+      // Check if manual location is set
+      if (preferences.manualLocation) {
+        // Use manual location
+        const weather = await fetchWeather(preferences.manualLocation)
+        if (weather) {
+          setWeatherData(weather)
+          setCurrentWeather(weather.weatherType)
+          setLocationError(null)
+        } else {
+          setLocationError('unavailable')
+          return // Don't enable if weather fetch failed
+        }
+      } else {
+        // Try automatic location
+        const locationResult = await requestLocation()
+        
+        if (locationResult.success && locationResult.coords) {
+          // Fetch weather data
+          const weather = await fetchWeather(locationResult.coords)
+          if (weather) {
+            setWeatherData(weather)
+            setCurrentWeather(weather.weatherType)
+            setLocationError(null)
+          } else {
+            setLocationError('unavailable')
+            return // Don't enable if weather fetch failed
+          }
+        } else {
+          setLocationError(locationResult.error || 'unavailable')
+          // Don't return - user can still set manual location
+        }
+      }
+    } else {
+      // Disabling real weather - clear data and interval
+      setWeatherData(null)
+      setLocationError(null)
+      if (weatherFetchInterval.current) {
+        clearInterval(weatherFetchInterval.current)
+        weatherFetchInterval.current = null
+      }
+      // Reset to season's default weather
+      if (!debugParams.forceWeather) {
+        const config = getSeasonConfig(currentSeason)
+        setCurrentWeather(config.defaultWeather as Weather)
+      }
+    }
+    
+    savePreferences({ useRealWeather: newValue })
+    setPreferences((prev) => ({ ...prev, useRealWeather: newValue }))
+  }
+
+  const handleManualLocationSet = async (latitude: number, longitude: number) => {
+    const coords = { latitude, longitude }
+    savePreferences({ manualLocation: coords })
+    setPreferences((prev) => ({ ...prev, manualLocation: coords }))
+    
+    // Fetch weather with new location
+    if (preferences.useRealWeather) {
+      const weather = await fetchWeather(coords)
+      if (weather) {
+        setWeatherData(weather)
+        setCurrentWeather(weather.weatherType)
+        setLocationError(null)
+      } else {
+        setLocationError('unavailable')
+      }
+    }
+  }
+
+  const handleManualLocationClear = () => {
+    savePreferences({ manualLocation: undefined })
+    setPreferences((prev) => ({ ...prev, manualLocation: undefined }))
   }
 
   const handleSeasonChange = (season: Season) => {
@@ -219,8 +336,13 @@ function App() {
         onThemeChange={handleThemeChange}
         onSeasonalThemeToggle={handleSeasonalThemeToggle}
         onWeatherEffectsToggle={handleWeatherEffectsToggle}
+        onRealWeatherToggle={handleRealWeatherToggle}
+        onManualLocationSet={handleManualLocationSet}
+        onManualLocationClear={handleManualLocationClear}
         onReset={handleReset}
         canReset={canReset}
+        locationError={locationError}
+        weatherData={weatherData}
       />
 
       {/* Debug Panel - only in debug mode */}
