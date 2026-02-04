@@ -20,6 +20,7 @@ describe('storage', () => {
         seasonalTheme: true,
         weatherEffects: true,
         useRealWeather: false,
+        manualLocation: undefined,
       })
     })
 
@@ -67,6 +68,7 @@ describe('storage', () => {
         seasonalTheme: true,
         weatherEffects: true,
         useRealWeather: false,
+        manualLocation: undefined,
       })
     })
 
@@ -82,6 +84,7 @@ describe('storage', () => {
         seasonalTheme: true,
         weatherEffects: true,
         useRealWeather: false,
+        manualLocation: undefined,
       })
     })
   })

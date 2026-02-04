@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import type { Preferences } from '../utils'
 import type { GeolocationError } from '../utils/geolocation'
 import type { WeatherData } from '../utils/weatherApi'
@@ -13,6 +13,8 @@ interface SettingsModalProps {
   onSeasonalThemeToggle: () => void
   onWeatherEffectsToggle: () => void
   onRealWeatherToggle: () => void
+  onManualLocationSet: (latitude: number, longitude: number) => void
+  onManualLocationClear: () => void
   onReset: () => void
   canReset: boolean
   locationError: GeolocationError | null
@@ -28,11 +30,16 @@ export function SettingsModal({
   onSeasonalThemeToggle,
   onWeatherEffectsToggle,
   onRealWeatherToggle,
+  onManualLocationSet,
+  onManualLocationClear,
   onReset,
   canReset,
   locationError,
   weatherData,
 }: SettingsModalProps) {
+  const [showManualLocation, setShowManualLocation] = useState(false)
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
   // Handle ESC key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -177,21 +184,96 @@ export function SettingsModal({
               <ToggleSwitch enabled={preferences.useRealWeather} onToggle={onRealWeatherToggle} />
             </div>
             
-            {/* Location error message */}
-            {locationError && (
-              <div className="mt-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {getGeolocationErrorMessage(locationError)}
-                </p>
-              </div>
-            )}
-            
-            {/* Weather data display */}
-            {weatherData && preferences.useRealWeather && !locationError && (
-              <div className="mt-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <p className="text-xs text-blue-600 dark:text-blue-400">
-                  Current: {weatherData.temperature}°C · {weatherData.weatherType}
-                </p>
+            {/* Manual location section */}
+            {preferences.useRealWeather && (
+              <div className="mt-3 space-y-2">
+                {/* Manual location display/input */}
+                {preferences.manualLocation ? (
+                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        📍 Manual: {preferences.manualLocation.latitude.toFixed(4)}, {preferences.manualLocation.longitude.toFixed(4)}
+                      </p>
+                      <button
+                        onClick={onManualLocationClear}
+                        className="text-xs text-green-600 dark:text-green-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Location error message with manual location option */}
+                    {locationError && (
+                      <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+                        <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                          {getGeolocationErrorMessage(locationError)}
+                        </p>
+                        <button
+                          onClick={() => setShowManualLocation(!showManualLocation)}
+                          className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
+                        >
+                          {showManualLocation ? '✕ Cancel' : '+ Set location manually'}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Manual location input form */}
+                    {showManualLocation && (
+                      <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 space-y-2">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          Enter coordinates:
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            step="0.0001"
+                            placeholder="Latitude"
+                            value={latitude}
+                            onChange={(e) => setLatitude(e.target.value)}
+                            className="px-2 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                          <input
+                            type="number"
+                            step="0.0001"
+                            placeholder="Longitude"
+                            value={longitude}
+                            onChange={(e) => setLongitude(e.target.value)}
+                            className="px-2 py-1.5 text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const lat = parseFloat(latitude)
+                            const lon = parseFloat(longitude)
+                            if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                              onManualLocationSet(lat, lon)
+                              setShowManualLocation(false)
+                              setLatitude('')
+                              setLongitude('')
+                            }
+                          }}
+                          className="w-full py-1.5 px-3 text-xs font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                        >
+                          Set Location
+                        </button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Example: Helsinki is 60.1699, 24.9384
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Weather data display */}
+                {weatherData && !locationError && (
+                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      Current: {weatherData.temperature}°C · {weatherData.weatherType}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </section>

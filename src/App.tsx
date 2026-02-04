@@ -179,13 +179,13 @@ function App() {
     const newValue = !preferences.useRealWeather
     
     if (newValue) {
-      // Enabling real weather - request location
+      // Enabling real weather - try automatic location first
       setLocationError(null)
-      const locationResult = await requestLocation()
       
-      if (locationResult.success && locationResult.coords) {
-        // Fetch weather data
-        const weather = await fetchWeather(locationResult.coords)
+      // Check if manual location is set
+      if (preferences.manualLocation) {
+        // Use manual location
+        const weather = await fetchWeather(preferences.manualLocation)
         if (weather) {
           setWeatherData(weather)
           setCurrentWeather(weather.weatherType)
@@ -195,8 +195,24 @@ function App() {
           return // Don't enable if weather fetch failed
         }
       } else {
-        setLocationError(locationResult.error || 'unavailable')
-        return // Don't enable if location request failed
+        // Try automatic location
+        const locationResult = await requestLocation()
+        
+        if (locationResult.success && locationResult.coords) {
+          // Fetch weather data
+          const weather = await fetchWeather(locationResult.coords)
+          if (weather) {
+            setWeatherData(weather)
+            setCurrentWeather(weather.weatherType)
+            setLocationError(null)
+          } else {
+            setLocationError('unavailable')
+            return // Don't enable if weather fetch failed
+          }
+        } else {
+          setLocationError(locationResult.error || 'unavailable')
+          // Don't return - user can still set manual location
+        }
       }
     } else {
       // Disabling real weather - clear data and interval
@@ -215,6 +231,29 @@ function App() {
     
     savePreferences({ useRealWeather: newValue })
     setPreferences((prev) => ({ ...prev, useRealWeather: newValue }))
+  }
+
+  const handleManualLocationSet = async (latitude: number, longitude: number) => {
+    const coords = { latitude, longitude }
+    savePreferences({ manualLocation: coords })
+    setPreferences((prev) => ({ ...prev, manualLocation: coords }))
+    
+    // Fetch weather with new location
+    if (preferences.useRealWeather) {
+      const weather = await fetchWeather(coords)
+      if (weather) {
+        setWeatherData(weather)
+        setCurrentWeather(weather.weatherType)
+        setLocationError(null)
+      } else {
+        setLocationError('unavailable')
+      }
+    }
+  }
+
+  const handleManualLocationClear = () => {
+    savePreferences({ manualLocation: undefined })
+    setPreferences((prev) => ({ ...prev, manualLocation: undefined }))
   }
 
   const handleSeasonChange = (season: Season) => {
@@ -298,6 +337,8 @@ function App() {
         onSeasonalThemeToggle={handleSeasonalThemeToggle}
         onWeatherEffectsToggle={handleWeatherEffectsToggle}
         onRealWeatherToggle={handleRealWeatherToggle}
+        onManualLocationSet={handleManualLocationSet}
+        onManualLocationClear={handleManualLocationClear}
         onReset={handleReset}
         canReset={canReset}
         locationError={locationError}
