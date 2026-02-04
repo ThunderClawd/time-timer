@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { TimerDisplay } from './components'
 import { SettingsButton } from './components/SettingsButton'
+import { ThemeCollectionButton } from './components/ThemeCollectionButton'
 import { StartStopButton } from './components/StartStopButton'
 import { SettingsModal } from './components/SettingsModal'
 import { SeasonalDecorations } from './components/SeasonalDecorations'
@@ -26,7 +27,7 @@ import {
 import type { Weather } from './themes/weather'
 import { requestLocation, type GeolocationError } from './utils/geolocation'
 import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
-import { autoUnlockTodayTheme, getCurrentEffectiveTheme, setActiveTheme } from './utils/themeCollection'
+import { autoUnlockTodayTheme, getCurrentEffectiveTheme, setActiveTheme, unlockAllThemes } from './utils/themeCollection'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
@@ -104,8 +105,13 @@ function App() {
   }, [])
 
   // Open theme collection in debug mode if ?themes=true
+  // Also auto-unlock all themes in debug mode
   useEffect(() => {
     if (debugParams.themesDebug) {
+      const unlocked = unlockAllThemes()
+      if (unlocked > 0) {
+        console.log(`Debug mode: Unlocked ${unlocked} themes (all 127 themes now available)`)
+      }
       setThemeCollectionOpen(true)
     }
   }, [debugParams.themesDebug])
@@ -342,6 +348,9 @@ function App() {
 
       {/* Seasonal decorations layer */}
       {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
+
+      {/* Theme Collection button - top right (next to settings) */}
+      <ThemeCollectionButton onClick={() => setThemeCollectionOpen(true)} />
 
       {/* Settings button - top right */}
       <SettingsButton onClick={() => setSettingsOpen(true)} />

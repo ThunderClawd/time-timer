@@ -110,6 +110,30 @@ export function clearCollection(): void {
 }
 
 /**
+ * Unlock all themes (for debug mode)
+ * Returns the number of newly unlocked themes
+ */
+export function unlockAllThemes(): number {
+  const { getAllThemes } = require('../themes/dailyThemes');
+  const allThemes = getAllThemes();
+  const collection = loadThemeCollection();
+  let newlyUnlocked = 0;
+
+  allThemes.forEach((theme: { id: string }) => {
+    if (!collection.themes.includes(theme.id)) {
+      collection.themes.push(theme.id);
+      newlyUnlocked++;
+    }
+    if (!collection.unlockedDates[theme.id]) {
+      collection.unlockedDates[theme.id] = Date.now();
+    }
+  });
+
+  saveThemeCollection(collection);
+  return newlyUnlocked;
+}
+
+/**
  * Get today's theme based on the current date
  */
 export function getTodayTheme(): DailyTheme {
