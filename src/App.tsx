@@ -380,6 +380,7 @@ function App() {
             onDurationSet={handleDurationSet}
             season={currentSeason}
             seasonalThemeEnabled={preferences.seasonalTheme}
+            collectionTheme={dailyThemeEnabled ? activeCollectionTheme : null}
           />
         </div>
 

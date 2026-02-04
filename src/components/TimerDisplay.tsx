@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { formatTime } from '../utils'
 import type { TimerState } from '../hooks'
 import { getSeasonalTimerColor, getSeasonConfig, type Season } from '../themes/seasons'
+import type { DailyTheme } from '../themes/dailyThemes.types'
 
 interface TimerDisplayProps {
   progress: number
@@ -10,11 +11,12 @@ interface TimerDisplayProps {
   onDurationSet: (minutes: number) => void
   season?: Season
   seasonalThemeEnabled?: boolean
+  collectionTheme?: DailyTheme | null
 }
 
 const MAX_MINUTES = 60
 
-export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, season = 'spring', seasonalThemeEnabled = true }: TimerDisplayProps) {
+export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, season = 'spring', seasonalThemeEnabled = true, collectionTheme }: TimerDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationRef = useRef<number | null>(null)
@@ -165,15 +167,18 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       const isDark = document.documentElement.classList.contains('dark')
       const timerColors = seasonConfig.colors.timerDisplay
       const useSeasonalColors = seasonalThemeEnabled
+      const useCollectionTheme = !!collectionTheme
 
       // Clear canvas
       ctx.clearRect(0, 0, size, size)
 
-      // Background circle (the "dial" background) - with seasonal tint
+      // Background circle (the "dial" background) - collection theme > seasonal > default
       ctx.beginPath()
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
       let bgColor: string
-      if (useSeasonalColors) {
+      if (useCollectionTheme) {
+        bgColor = isDark ? collectionTheme.colors.timerBackgroundDark : collectionTheme.colors.timerBackground
+      } else if (useSeasonalColors) {
         bgColor = isDark ? timerColors.backgroundDark : timerColors.background
       } else {
         bgColor = isDark ? '#1f2937' : '#f3f4f6'
@@ -182,9 +187,15 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       ctx.fill()
 
       // Draw tick marks around the edge
-      const tickColor = useSeasonalColors
-        ? (isDark ? timerColors.tickMarksDark : timerColors.tickMarks)
-        : (isDark ? '#4b5563' : '#9ca3af')
+      let tickColor: string
+      if (useCollectionTheme) {
+        // Use a slightly muted version of the timer colors for tick marks
+        tickColor = isDark ? collectionTheme.colors.textSecondaryDark : collectionTheme.colors.textSecondary
+      } else if (useSeasonalColors) {
+        tickColor = isDark ? timerColors.tickMarksDark : timerColors.tickMarks
+      } else {
+        tickColor = isDark ? '#4b5563' : '#9ca3af'
+      }
       for (let i = 0; i < 60; i++) {
         const angle = (i / 60) * Math.PI * 2 - Math.PI / 2
         const isMajor = i % 5 === 0
@@ -207,9 +218,14 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
 
       // Draw minute numbers at major tick marks
       ctx.font = `${size * 0.035}px system-ui, -apple-system, sans-serif`
-      const numberColor = useSeasonalColors
-        ? (isDark ? timerColors.numbersDark : timerColors.numbers)
-        : (isDark ? '#9ca3af' : '#6b7280')
+      let numberColor: string
+      if (useCollectionTheme) {
+        numberColor = isDark ? collectionTheme.colors.textSecondaryDark : collectionTheme.colors.textSecondary
+      } else if (useSeasonalColors) {
+        numberColor = isDark ? timerColors.numbersDark : timerColors.numbers
+      } else {
+        numberColor = isDark ? '#9ca3af' : '#6b7280'
+      }
       ctx.fillStyle = numberColor
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -226,16 +242,23 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       // Determine what slice to show
       let sliceMinutes = 0
       let sliceColor: string
-      const defaultSliceColor = useSeasonalColors ? timerColors.progressStart : '#60a5fa'
+      const defaultSliceColor = useCollectionTheme
+        ? collectionTheme.colors.timerStart
+        : (useSeasonalColors ? timerColors.progressStart : '#60a5fa')
 
       if (isDragging && state === 'idle') {
         // While setting duration - show slice based on drag
         sliceMinutes = settingMinutes
-        sliceColor = useSeasonalColors ? timerColors.progressStart : '#60a5fa'
+        sliceColor = useCollectionTheme
+          ? collectionTheme.colors.timerStart
+          : (useSeasonalColors ? timerColors.progressStart : '#60a5fa')
       } else if (state === 'running' || state === 'paused') {
-        // Timer running - show slice based on remaining time with seasonal colors
+        // Timer running - show slice based on remaining time with themed colors
         sliceMinutes = timeRemaining / 60
-        if (useSeasonalColors) {
+        if (useCollectionTheme) {
+          // Interpolate between collection theme timer colors based on progress
+          sliceColor = getCollectionTimerColor(currentProgressRef.current, collectionTheme)
+        } else if (useSeasonalColors) {
           sliceColor = getSeasonalTimerColor(currentProgressRef.current, season)
         } else {
           // Default blue gradient based on progress
@@ -244,7 +267,9 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       } else if (state === 'idle' && settingMinutes > 0) {
         // Duration set but not started
         sliceMinutes = settingMinutes
-        sliceColor = useSeasonalColors ? timerColors.progressStart : '#60a5fa'
+        sliceColor = useCollectionTheme
+          ? collectionTheme.colors.timerStart
+          : (useSeasonalColors ? timerColors.progressStart : '#60a5fa')
       } else {
         sliceColor = defaultSliceColor
       }
@@ -282,7 +307,9 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       ctx.beginPath()
       ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2)
       let innerColor: string
-      if (useSeasonalColors) {
+      if (useCollectionTheme) {
+        innerColor = isDark ? collectionTheme.colors.timerInnerCircleDark : collectionTheme.colors.timerInnerCircle
+      } else if (useSeasonalColors) {
         innerColor = isDark ? timerColors.innerCircleDark : timerColors.innerCircle
       } else {
         innerColor = isDark ? '#111827' : '#ffffff'
@@ -317,25 +344,29 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
         ctx.fillStyle = 'rgba(0,0,0,0.2)'
         ctx.fill()
 
-        // Handle circle - use seasonal accent color
+        // Handle circle - use collection/seasonal accent color
         ctx.beginPath()
         ctx.arc(handleX, handleY, 12, 0, Math.PI * 2)
-        ctx.fillStyle = seasonConfig.colors.accent
+        ctx.fillStyle = useCollectionTheme
+          ? (isDark ? collectionTheme.colors.accentDark : collectionTheme.colors.accent)
+          : seasonConfig.colors.accent
         ctx.fill()
         ctx.strokeStyle = '#ffffff'
         ctx.lineWidth = 2
         ctx.stroke()
       }
 
-      // Pulse effect when completed - use seasonal colors
+      // Pulse effect when completed - use collection/seasonal colors
       if (state === 'completed') {
         const pulsePhase = (Date.now() % 1000) / 1000
         const pulseAlpha = easeOutCubic(Math.sin(pulsePhase * Math.PI)) * 0.4
 
         ctx.beginPath()
         ctx.arc(centerX, centerY, radius + 10, 0, Math.PI * 2)
-        // Extract RGB from seasonal end color for pulse
-        const pulseColor = seasonConfig.colors.timerColors.end
+        // Extract RGB from collection or seasonal end color for pulse
+        const pulseColor = useCollectionTheme
+          ? collectionTheme.colors.timerEnd
+          : seasonConfig.colors.timerColors.end
         const r = parseInt(pulseColor.slice(1, 3), 16)
         const g = parseInt(pulseColor.slice(3, 5), 16)
         const b = parseInt(pulseColor.slice(5, 7), 16)
@@ -354,7 +385,7 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [canvasSize, progress, state, isDragging, settingMinutes, timeRemaining, season, seasonConfig, seasonalThemeEnabled])
+  }, [canvasSize, progress, state, isDragging, settingMinutes, timeRemaining, season, seasonConfig, seasonalThemeEnabled, collectionTheme])
 
   // Update progress ref when props change
   useEffect(() => {
@@ -407,8 +438,35 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
     return ''
   }
 
-  // Dynamic text color based on state and season
+  // Dynamic text color based on state, season, and collection theme
+  const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+
+  const getTextColorStyle = () => {
+    if (collectionTheme) {
+      return {
+        color: isDarkMode ? collectionTheme.colors.textPrimaryDark : collectionTheme.colors.textPrimary
+      }
+    }
+    return {}
+  }
+
+  const getSubTextColorStyle = () => {
+    if (collectionTheme) {
+      return {
+        color: isDarkMode ? collectionTheme.colors.textSecondaryDark : collectionTheme.colors.textSecondary
+      }
+    }
+    return {}
+  }
+
   const getTextColorClass = () => {
+    if (collectionTheme) {
+      // When using collection theme, only use animation classes
+      if (state === 'completed') {
+        return 'animate-pulse-soft'
+      }
+      return ''
+    }
     if (state === 'completed') {
       return 'text-gray-800 dark:text-gray-100 animate-pulse-soft'
     }
@@ -416,6 +474,14 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       return 'text-gray-700 dark:text-gray-200'
     }
     return 'text-gray-800 dark:text-gray-100'
+  }
+
+  const getSubTextColorClass = () => {
+    if (collectionTheme) {
+      // When using collection theme, only use structural classes
+      return state === 'completed' ? 'font-medium' : ''
+    }
+    return state === 'completed' ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'
   }
 
   return (
@@ -436,12 +502,15 @@ export function TimerDisplay({ progress, timeRemaining, state, onDurationSet, se
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span
           className={`text-4xl md:text-5xl font-light tabular-nums tracking-tight transition-colors ${getTextColorClass()}`}
+          style={getTextColorStyle()}
         >
           {getCenterText()}
         </span>
         {getSubText() && (
-          <span className={`text-sm mt-2 uppercase tracking-wider
-            ${state === 'completed' ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span
+            className={`text-sm mt-2 uppercase tracking-wider ${getSubTextColorClass()}`}
+            style={getSubTextColorStyle()}
+          >
             {getSubText()}
           </span>
         )}
@@ -457,4 +526,41 @@ function adjustBrightness(hex: string, percent: number): string {
   const G = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt))
   const B = Math.min(255, Math.max(0, (num & 0x0000ff) + amt))
   return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`
+}
+
+/**
+ * Interpolate between two hex colors
+ */
+function interpolateHexColor(color1: string, color2: string, factor: number): string {
+  const hex = (x: string) => parseInt(x, 16)
+  const r1 = hex(color1.slice(1, 3))
+  const g1 = hex(color1.slice(3, 5))
+  const b1 = hex(color1.slice(5, 7))
+  const r2 = hex(color2.slice(1, 3))
+  const g2 = hex(color2.slice(3, 5))
+  const b2 = hex(color2.slice(5, 7))
+
+  const r = Math.round(r1 + (r2 - r1) * factor)
+  const g = Math.round(g1 + (g2 - g1) * factor)
+  const b = Math.round(b1 + (b2 - b1) * factor)
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
+/**
+ * Get timer color based on progress for collection themes
+ * Interpolates between timerStart -> timerMid -> timerEnd
+ */
+function getCollectionTimerColor(progress: number, theme: DailyTheme): string {
+  const { timerStart, timerMid, timerEnd } = theme.colors
+
+  if (progress > 0.5) {
+    // Interpolate from mid to start (progress 0.5 -> 1.0)
+    const factor = (progress - 0.5) / 0.5
+    return interpolateHexColor(timerMid, timerStart, factor)
+  } else {
+    // Interpolate from end to mid (progress 0.0 -> 0.5)
+    const factor = progress / 0.5
+    return interpolateHexColor(timerEnd, timerMid, factor)
+  }
 }
