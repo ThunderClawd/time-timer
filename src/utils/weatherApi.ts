@@ -48,7 +48,7 @@ export async function fetchWeather(
   coords: GeolocationCoords
 ): Promise<WeatherData | null> {
   try {
-    const url = `https://api.open-meteo.org/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,weather_code`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,weather_code`;
     
     const response = await fetch(url);
     

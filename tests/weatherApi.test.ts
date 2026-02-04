@@ -112,7 +112,7 @@ describe('Weather API', () => {
       await fetchWeather(mockCoords);
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://api.open-meteo.org/v1/forecast?latitude=60.1699&longitude=24.9384&current=temperature_2m,weather_code'
+        'https://api.open-meteo.com/v1/forecast?latitude=60.1699&longitude=24.9384&current=temperature_2m,weather_code'
       );
     });
   });
