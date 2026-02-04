@@ -254,7 +254,7 @@ export function SettingsModal({
           )}
 
           {/* Decorations Toggle */}
-          {onDecorationsToggle && (
+          {onDecorationsToggle && dailyThemeEnabled && (
             <section className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
@@ -272,7 +272,7 @@ export function SettingsModal({
           )}
 
           {/* Effects Toggle */}
-          {onEffectsToggle && (
+          {onEffectsToggle && dailyThemeEnabled && (
             <section className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
@@ -306,6 +306,7 @@ export function SettingsModal({
           </section>
 
           {/* Use Real Weather Toggle */}
+          {preferences.weatherEffects && (
           <section>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -432,6 +433,7 @@ export function SettingsModal({
               </div>
             )}
           </section>
+          )}
 
           {/* Reset Timer */}
           {canReset && (
