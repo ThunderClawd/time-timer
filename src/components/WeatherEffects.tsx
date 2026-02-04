@@ -355,7 +355,7 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
 
   // Draw night sky with stars (moon now rendered by DayNightCycle)
   const drawNight = useCallback(
-    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    (ctx: CanvasRenderingContext2D, _width: number, _height: number) => {
       // Draw stars with twinkling
       particlesRef.current.forEach(particle => {
         const isBright = particle.type === 'brightStar';
@@ -444,7 +444,7 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
 
   // Draw sunny effect with dust particles (sun now rendered by DayNightCycle)
   const drawSunny = useCallback(
-    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    (ctx: CanvasRenderingContext2D, width: number, _height: number) => {
       // Floating dust particles in sunbeam
       const beamCenterX = width * 0.5;
       const beamWidth = width * 0.4;
