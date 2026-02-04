@@ -14,13 +14,43 @@ import {
 } from '../themes/weather';
 import { createClouds, updateCloud, Cloud } from '../themes/animations';
 import { isNightTime } from '../themes/seasons';
+import type { DailyTheme, BackgroundEffect } from '../themes/dailyThemes.types';
 
 interface WeatherEffectsProps {
   weather: Weather;
   debugTime?: number | null;
+  collectionTheme?: DailyTheme | null;
 }
 
-export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
+// Map BackgroundEffect to Weather type or 'custom' for special effects
+function mapBackgroundEffectToWeather(effect: BackgroundEffect): Weather | 'custom' {
+  switch (effect) {
+    case 'snow':
+      return 'snowy';
+    case 'rain':
+      return 'rainy';
+    case 'fog':
+    case 'dust':
+    case 'aurora':
+      return 'cloudy';
+    case 'stars':
+    case 'fireflies':
+    case 'glitter':
+    case 'sparkles':
+      return 'clear';
+    case 'leaves':
+    case 'petals':
+    case 'confetti':
+    case 'hearts':
+    case 'bubbles':
+      return 'custom';
+    case 'none':
+    default:
+      return 'clear';
+  }
+}
+
+export function WeatherEffects({ weather, debugTime, collectionTheme }: WeatherEffectsProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const cloudsRef = useRef<Cloud[]>([]);
@@ -29,23 +59,32 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
   const lastShootingStarTime = useRef<number>(0);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  const config = getWeatherConfig(weather);
+  // Determine effective weather/effect type
+  const hasCollectionEffect = collectionTheme?.backgroundEffect && collectionTheme.backgroundEffect !== 'none';
+  const effectiveWeather = hasCollectionEffect
+    ? mapBackgroundEffectToWeather(collectionTheme!.backgroundEffect)
+    : weather;
+  const collectionEffect = collectionTheme?.backgroundEffect || 'none';
+
+  const config = getWeatherConfig(effectiveWeather === 'custom' ? 'clear' : effectiveWeather);
 
   // Initialize particles, clouds, and other effects
   useEffect(() => {
     if (dimensions.width > 0 && dimensions.height > 0) {
-      particlesRef.current = createParticles(weather, dimensions.width, dimensions.height);
+      // Use effective weather for particle creation
+      const weatherForParticles = effectiveWeather === 'custom' ? 'clear' : effectiveWeather;
+      particlesRef.current = createParticles(weatherForParticles, dimensions.width, dimensions.height);
       splashesRef.current = createSplashes();
       shootingStarsRef.current = [];
 
-      // Create clouds for cloudy weather
-      if (weather === 'cloudy') {
-        cloudsRef.current = createClouds(8); // More clouds
+      // Create clouds for cloudy weather or fog effect
+      if (effectiveWeather === 'cloudy' || collectionEffect === 'fog') {
+        cloudsRef.current = createClouds(collectionEffect === 'fog' ? 12 : 8);
       } else {
         cloudsRef.current = [];
       }
     }
-  }, [weather, dimensions.width, dimensions.height]);
+  }, [effectiveWeather, collectionEffect, dimensions.width, dimensions.height]);
 
   // Handle resize
   useEffect(() => {
@@ -473,6 +512,135 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
     [debugTime]
   );
 
+  // Draw fog effect
+  const drawFog = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => {
+    // Semi-transparent fog layers
+    cloudsRef.current.forEach((cloud) => {
+      const baseX = (cloud.x / 100) * width;
+      const verticalOffset = Math.sin(cloud.driftPhase + time * 0.0003) * 5;
+      const baseY = (cloud.y / 100) * height + verticalOffset;
+      const baseScale = cloud.scale * 80;
+
+      // Fog gradient - more diffuse than clouds
+      const gradient = ctx.createRadialGradient(
+        baseX, baseY, 0,
+        baseX, baseY, baseScale
+      );
+      const alpha = cloud.opacity * 0.4;
+      gradient.addColorStop(0, `rgba(200, 200, 210, ${alpha})`);
+      gradient.addColorStop(0.4, `rgba(180, 180, 195, ${alpha * 0.6})`);
+      gradient.addColorStop(0.7, `rgba(160, 160, 175, ${alpha * 0.3})`);
+      gradient.addColorStop(1, 'rgba(150, 150, 165, 0)');
+
+      ctx.beginPath();
+      ctx.fillStyle = gradient;
+      ctx.ellipse(baseX, baseY, baseScale, baseScale * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }, []);
+
+  // Draw fireflies effect
+  const drawFireflies = useCallback((ctx: CanvasRenderingContext2D, time: number) => {
+    particlesRef.current.forEach((particle, index) => {
+      // Pulsing glow
+      const pulse = (Math.sin(time * 0.003 + index * 0.5) + 1) * 0.5;
+      const alpha = particle.opacity * (0.3 + pulse * 0.7);
+      const glowSize = particle.size * (1.5 + pulse);
+
+      const gradient = ctx.createRadialGradient(
+        particle.x, particle.y, 0,
+        particle.x, particle.y, glowSize * 3
+      );
+      gradient.addColorStop(0, `rgba(255, 250, 150, ${alpha})`);
+      gradient.addColorStop(0.3, `rgba(200, 255, 100, ${alpha * 0.6})`);
+      gradient.addColorStop(0.6, `rgba(150, 255, 50, ${alpha * 0.2})`);
+      gradient.addColorStop(1, 'rgba(100, 200, 50, 0)');
+
+      ctx.beginPath();
+      ctx.fillStyle = gradient;
+      ctx.arc(particle.x, particle.y, glowSize * 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bright core
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255, 255, 200, ${alpha})`;
+      ctx.arc(particle.x, particle.y, particle.size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }, []);
+
+  // Draw glitter/sparkles effect
+  const drawGlitter = useCallback((ctx: CanvasRenderingContext2D, time: number) => {
+    particlesRef.current.forEach((particle, index) => {
+      // Sparkle effect
+      const sparkle = (Math.sin(time * 0.005 + index * 1.5) + 1) * 0.5;
+      if (sparkle < 0.3) return; // Only show some sparkles at a time
+
+      const alpha = particle.opacity * sparkle;
+      const size = particle.size * (0.5 + sparkle);
+
+      // Star shape
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      // Cross pattern
+      ctx.moveTo(particle.x - size, particle.y);
+      ctx.lineTo(particle.x + size, particle.y);
+      ctx.moveTo(particle.x, particle.y - size);
+      ctx.lineTo(particle.x, particle.y + size);
+      // Diagonal cross
+      const diagSize = size * 0.7;
+      ctx.moveTo(particle.x - diagSize, particle.y - diagSize);
+      ctx.lineTo(particle.x + diagSize, particle.y + diagSize);
+      ctx.moveTo(particle.x + diagSize, particle.y - diagSize);
+      ctx.lineTo(particle.x - diagSize, particle.y + diagSize);
+      ctx.stroke();
+
+      // Center dot
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.arc(particle.x, particle.y, size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }, []);
+
+  // Draw aurora effect
+  const drawAurora = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => {
+    const waveCount = 3;
+    for (let w = 0; w < waveCount; w++) {
+      const yOffset = height * 0.2 + w * 30;
+      const colors = [
+        { r: 0, g: 255, b: 150 },
+        { r: 100, g: 200, b: 255 },
+        { r: 150, g: 100, b: 255 },
+      ];
+      const color = colors[w % colors.length];
+      if (!color) continue;
+
+      ctx.beginPath();
+      ctx.moveTo(0, yOffset);
+
+      for (let x = 0; x <= width; x += 10) {
+        const wave1 = Math.sin((x + time * 0.05) * 0.01 + w) * 30;
+        const wave2 = Math.sin((x + time * 0.03) * 0.02 + w * 2) * 20;
+        const y = yOffset + wave1 + wave2;
+        ctx.lineTo(x, y);
+      }
+
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+
+      const gradient = ctx.createLinearGradient(0, yOffset - 50, 0, height);
+      gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.15)`);
+      gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, 0.08)`);
+      gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+  }, []);
+
   // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -497,99 +665,156 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
         ctx.fillRect(0, 0, dimensions.width, dimensions.height);
       }
 
-      // Update and draw based on weather type
-      switch (weather) {
-        case 'rainy':
-          particlesRef.current = updateParticles(
-            particlesRef.current,
-            weather,
-            dimensions.width,
-            dimensions.height,
-            deltaTime,
-            splashesRef.current
-          );
+      // Handle special collection theme effects first
+      if (hasCollectionEffect) {
+        const weatherType = effectiveWeather === 'custom' ? 'clear' : effectiveWeather;
+
+        // Update particles
+        particlesRef.current = updateParticles(
+          particlesRef.current,
+          weatherType,
+          dimensions.width,
+          dimensions.height,
+          deltaTime,
+          collectionEffect === 'rain' ? splashesRef.current : undefined
+        );
+
+        if (collectionEffect === 'rain') {
           splashesRef.current = updateSplashes(splashesRef.current, deltaTime);
-          drawRain(ctx);
-          break;
+        }
 
-        case 'snowy':
-          particlesRef.current = updateParticles(
-            particlesRef.current,
-            weather,
-            dimensions.width,
-            dimensions.height,
-            deltaTime
-          );
-          drawSnow(ctx);
-          break;
-
-        case 'cloudy':
+        // Update clouds for fog
+        if (collectionEffect === 'fog' || collectionEffect === 'aurora') {
           cloudsRef.current = cloudsRef.current.map(cloud => updateCloud(cloud, deltaTime));
-          drawClouds(ctx, dimensions.width, dimensions.height);
-          break;
+        }
 
-        case 'clear': {
-          particlesRef.current = updateParticles(
-            particlesRef.current,
-            weather,
-            dimensions.width,
-            dimensions.height,
-            deltaTime
-          );
+        // Draw based on collection effect
+        switch (collectionEffect) {
+          case 'fog':
+            drawFog(ctx, dimensions.width, dimensions.height, time);
+            break;
+          case 'snow':
+            drawSnow(ctx);
+            break;
+          case 'rain':
+            drawRain(ctx);
+            break;
+          case 'fireflies':
+            drawFireflies(ctx, time);
+            break;
+          case 'glitter':
+          case 'sparkles':
+            drawGlitter(ctx, time);
+            break;
+          case 'stars':
+            drawClear(ctx, dimensions.width, dimensions.height);
+            break;
+          case 'aurora':
+            drawAurora(ctx, dimensions.width, dimensions.height, time);
+            break;
+          case 'dust':
+            // Dust uses clear weather daytime particles
+            drawClear(ctx, dimensions.width, dimensions.height);
+            break;
+          default:
+            // For other effects, draw clear
+            drawClear(ctx, dimensions.width, dimensions.height);
+        }
+      } else {
+        // Original weather-based rendering
+        switch (effectiveWeather) {
+          case 'rainy':
+            particlesRef.current = updateParticles(
+              particlesRef.current,
+              effectiveWeather,
+              dimensions.width,
+              dimensions.height,
+              deltaTime,
+              splashesRef.current
+            );
+            splashesRef.current = updateSplashes(splashesRef.current, deltaTime);
+            drawRain(ctx);
+            break;
 
-          const date = debugTime !== null && debugTime !== undefined
-            ? (() => { const d = new Date(); d.setHours(debugTime, 0, 0, 0); return d; })()
-            : new Date();
-          const isNight = isNightTime(date);
+          case 'snowy':
+            particlesRef.current = updateParticles(
+              particlesRef.current,
+              effectiveWeather,
+              dimensions.width,
+              dimensions.height,
+              deltaTime
+            );
+            drawSnow(ctx);
+            break;
 
-          if (isNight) {
-            // Occasionally spawn shooting star (average every 8-15 seconds)
-            if (time - lastShootingStarTime.current > 8000 + Math.random() * 7000) {
-              if (Math.random() > 0.7) {
-                shootingStarsRef.current.push(
-                  createShootingStar(dimensions.width, dimensions.height)
-                );
-                lastShootingStarTime.current = time;
+          case 'cloudy':
+            cloudsRef.current = cloudsRef.current.map(cloud => updateCloud(cloud, deltaTime));
+            drawClouds(ctx, dimensions.width, dimensions.height);
+            break;
+
+          case 'clear': {
+            particlesRef.current = updateParticles(
+              particlesRef.current,
+              effectiveWeather,
+              dimensions.width,
+              dimensions.height,
+              deltaTime
+            );
+
+            const date = debugTime !== null && debugTime !== undefined
+              ? (() => { const d = new Date(); d.setHours(debugTime, 0, 0, 0); return d; })()
+              : new Date();
+            const isNight = isNightTime(date);
+
+            if (isNight) {
+              // Occasionally spawn shooting star (average every 8-15 seconds)
+              if (time - lastShootingStarTime.current > 8000 + Math.random() * 7000) {
+                if (Math.random() > 0.7) {
+                  shootingStarsRef.current.push(
+                    createShootingStar(dimensions.width, dimensions.height)
+                  );
+                  lastShootingStarTime.current = time;
+                }
               }
+
+              // Update shooting stars
+              shootingStarsRef.current = shootingStarsRef.current
+                .map(star => updateShootingStar(star, deltaTime))
+                .filter((star): star is ShootingStar => star !== null);
+
+              // Draw night ambient glow
+              const nightGradient = ctx.createRadialGradient(
+                dimensions.width * 0.5,
+                dimensions.height * 0.3,
+                0,
+                dimensions.width * 0.5,
+                dimensions.height * 0.3,
+                dimensions.width * 0.7
+              );
+              nightGradient.addColorStop(0, 'rgba(20, 20, 60, 0.02)');
+              nightGradient.addColorStop(1, 'rgba(15, 15, 45, 0.08)');
+              ctx.fillStyle = nightGradient;
+              ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+            } else {
+              // Draw day warm overlay
+              const sunnyGradient = ctx.createRadialGradient(
+                dimensions.width * 0.85,
+                dimensions.height * 0.1,
+                0,
+                dimensions.width * 0.5,
+                dimensions.height * 0.5,
+                dimensions.width * 0.8
+              );
+              sunnyGradient.addColorStop(0, 'rgba(255, 245, 200, 0.08)');
+              sunnyGradient.addColorStop(0.5, 'rgba(255, 240, 180, 0.03)');
+              sunnyGradient.addColorStop(1, 'rgba(255, 235, 160, 0)');
+              ctx.fillStyle = sunnyGradient;
+              ctx.fillRect(0, 0, dimensions.width, dimensions.height);
             }
 
-            // Update shooting stars
-            shootingStarsRef.current = shootingStarsRef.current
-              .map(star => updateShootingStar(star, deltaTime))
-              .filter((star): star is ShootingStar => star !== null);
-
-            // Draw night ambient glow
-            const nightGradient = ctx.createRadialGradient(
-              dimensions.width * 0.5,
-              dimensions.height * 0.3,
-              0,
-              dimensions.width * 0.5,
-              dimensions.height * 0.3,
-              dimensions.width * 0.7
-            );
-            nightGradient.addColorStop(0, 'rgba(20, 20, 60, 0.02)');
-            nightGradient.addColorStop(1, 'rgba(15, 15, 45, 0.08)');
-            ctx.fillStyle = nightGradient;
-            ctx.fillRect(0, 0, dimensions.width, dimensions.height);
-          } else {
-            // Draw day warm overlay
-            const sunnyGradient = ctx.createRadialGradient(
-              dimensions.width * 0.85,
-              dimensions.height * 0.1,
-              0,
-              dimensions.width * 0.5,
-              dimensions.height * 0.5,
-              dimensions.width * 0.8
-            );
-            sunnyGradient.addColorStop(0, 'rgba(255, 245, 200, 0.08)');
-            sunnyGradient.addColorStop(0.5, 'rgba(255, 240, 180, 0.03)');
-            sunnyGradient.addColorStop(1, 'rgba(255, 235, 160, 0)');
-            ctx.fillStyle = sunnyGradient;
-            ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+            drawClear(ctx, dimensions.width, dimensions.height);
+            break;
           }
-
-          drawClear(ctx, dimensions.width, dimensions.height);
-          break;
         }
       }
 
@@ -598,7 +823,7 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
 
     animationId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationId);
-  }, [weather, dimensions, config, drawRain, drawSnow, drawClouds, drawClear, debugTime]);
+  }, [effectiveWeather, collectionEffect, hasCollectionEffect, dimensions, config, drawRain, drawSnow, drawClouds, drawClear, drawFog, drawFireflies, drawGlitter, drawAurora, debugTime]);
 
   return (
     <canvas

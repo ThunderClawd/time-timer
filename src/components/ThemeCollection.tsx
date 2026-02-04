@@ -219,17 +219,35 @@ export function ThemeCollection({ onClose, onThemeChange, debugMode = false }: T
                     style={{ background: theme.colors.backgroundGradient }}
                   />
 
-                  {/* Mini Timer */}
+                  {/* Mini Timer Preview */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div
-                      className={`w-12 h-12 rounded-full ${!unlocked ? 'opacity-50' : ''}`}
+                      className={`w-16 h-16 rounded-full relative ${!unlocked ? 'opacity-50' : ''}`}
                       style={{
                         background: `conic-gradient(${theme.colors.timerStart} 0%, ${theme.colors.timerMid} 50%, ${theme.colors.timerEnd} 100%)`,
                       }}
                     >
+                      {/* Inner circle to create ring effect */}
                       <div
-                        className="absolute inset-1 rounded-full"
-                        style={{ backgroundColor: theme.colors.timerBackground }}
+                        className="absolute rounded-full"
+                        style={{
+                          top: '4px',
+                          left: '4px',
+                          right: '4px',
+                          bottom: '4px',
+                          backgroundColor: theme.colors.timerBackground,
+                        }}
+                      />
+                      {/* Progress indicator simulation - 75% fill */}
+                      <div
+                        className="absolute rounded-full"
+                        style={{
+                          top: '8px',
+                          left: '8px',
+                          right: '8px',
+                          bottom: '8px',
+                          backgroundColor: theme.colors.timerInnerCircle,
+                        }}
                       />
                     </div>
                   </div>

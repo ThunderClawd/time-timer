@@ -205,6 +205,18 @@ function App() {
     setPreferences((prev) => ({ ...prev, weatherEffects: newValue }))
   }
 
+  const handleDecorationsToggle = () => {
+    const newValue = !preferences.decorations
+    savePreferences({ decorations: newValue })
+    setPreferences((prev) => ({ ...prev, decorations: newValue }))
+  }
+
+  const handleEffectsToggle = () => {
+    const newValue = !preferences.effects
+    savePreferences({ effects: newValue })
+    setPreferences((prev) => ({ ...prev, effects: newValue }))
+  }
+
   const handleRealWeatherToggle = async () => {
     const newValue = !preferences.useRealWeather
     
@@ -358,10 +370,23 @@ function App() {
       <DayNightCycle debugTime={debugTime} />
 
       {/* Weather effects layer - on top of day/night cycle */}
-      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} debugTime={debugTime} />}
+      {/* Show effects based on: weatherEffects toggle for seasonal, effects toggle for collection themes */}
+      {(preferences.weatherEffects || (dailyThemeEnabled && preferences.effects && activeCollectionTheme?.backgroundEffect !== 'none')) && (
+        <WeatherEffects
+          weather={currentWeather}
+          debugTime={debugTime}
+          collectionTheme={dailyThemeEnabled && preferences.effects ? activeCollectionTheme : null}
+        />
+      )}
 
       {/* Seasonal decorations layer */}
-      {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
+      {/* Show decorations based on: seasonalTheme toggle for seasonal (only when daily themes disabled), decorations toggle for collection themes */}
+      {((preferences.seasonalTheme && !dailyThemeEnabled) || (dailyThemeEnabled && preferences.decorations)) && (
+        <SeasonalDecorations
+          season={currentSeason}
+          collectionTheme={dailyThemeEnabled && preferences.decorations ? activeCollectionTheme : null}
+        />
+      )}
 
       {/* Theme Collection button - top right (next to settings) */}
       <ThemeCollectionButton onClick={() => setThemeCollectionOpen(true)} />
@@ -416,6 +441,8 @@ function App() {
         onOpenThemeCollection={handleOpenThemeCollection}
         onDailyThemeToggle={handleDailyThemeToggle}
         dailyThemeEnabled={dailyThemeEnabled}
+        onDecorationsToggle={handleDecorationsToggle}
+        onEffectsToggle={handleEffectsToggle}
       />
 
       {/* Theme Collection Modal */}

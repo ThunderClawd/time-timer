@@ -8,6 +8,8 @@ export interface Preferences {
   weatherEffects: boolean
   useRealWeather: boolean
   manualLocation?: { latitude: number; longitude: number }
+  decorations: boolean
+  effects: boolean
 }
 
 const defaultPreferences: Preferences = {
@@ -18,6 +20,8 @@ const defaultPreferences: Preferences = {
   weatherEffects: true,
   useRealWeather: false,
   manualLocation: undefined,
+  decorations: true,
+  effects: true,
 }
 
 export function loadPreferences(): Preferences {
