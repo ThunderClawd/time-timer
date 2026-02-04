@@ -50,3 +50,73 @@ function interpolateHex(color1: string, color2: string, t: number): string {
 
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
+
+export interface CelestialPosition {
+  x: number // 0-100 percentage
+  y: number // 0-100 percentage
+  visible: boolean
+}
+
+/**
+ * Calculate sun position based on current time
+ * 6am: sunrise (left, y=50)
+ * 12pm: noon (center, y=10 - high in sky)
+ * 6pm: sunset (right, y=50)
+ * Night (6pm-6am): sun is below horizon (not visible)
+ */
+export function getSunPosition(now: Date = new Date()): CelestialPosition {
+  const hours = now.getHours() + now.getMinutes() / 60
+  
+  // Sun is visible from 6am to 6pm
+  if (hours < 6 || hours >= 18) {
+    return { x: 0, y: 100, visible: false }
+  }
+  
+  // Calculate progress through day (6am = 0, 6pm = 1)
+  const dayProgress = (hours - 6) / 12
+  
+  // X position: moves from left (10%) to right (90%)
+  const x = 10 + dayProgress * 80
+  
+  // Y position: follows an arc (parabola)
+  // Peak at noon (dayProgress = 0.5), lower at sunrise/sunset
+  const arcHeight = Math.sin(dayProgress * Math.PI)
+  const y = 50 - arcHeight * 40 // Ranges from 50% (horizon) to 10% (peak)
+  
+  return { x, y, visible: true }
+}
+
+/**
+ * Calculate moon position based on current time
+ * 6pm: moonrise (left, y=50)
+ * 12am: midnight (center, y=10 - high in sky)
+ * 6am: moonset (right, y=50)
+ * Day (6am-6pm): moon is below horizon (not visible)
+ */
+export function getMoonPosition(now: Date = new Date()): CelestialPosition {
+  const hours = now.getHours() + now.getMinutes() / 60
+  
+  // Convert to night hours (18:00 = 0, 06:00 = 12)
+  let nightHours: number
+  if (hours >= 18) {
+    nightHours = hours - 18 // 18:00-23:59 -> 0-5.99
+  } else if (hours < 6) {
+    nightHours = hours + 6 // 00:00-05:59 -> 6-11.99
+  } else {
+    // Day time (6am-6pm): moon not visible
+    return { x: 0, y: 100, visible: false }
+  }
+  
+  // Calculate progress through night (0 = 6pm, 12 = 6am)
+  const nightProgress = nightHours / 12
+  
+  // X position: moves from left (10%) to right (90%)
+  const x = 10 + nightProgress * 80
+  
+  // Y position: follows an arc (parabola)
+  // Peak at midnight (nightProgress = 0.5), lower at rise/set
+  const arcHeight = Math.sin(nightProgress * Math.PI)
+  const y = 50 - arcHeight * 40 // Ranges from 50% (horizon) to 10% (peak)
+  
+  return { x, y, visible: true }
+}

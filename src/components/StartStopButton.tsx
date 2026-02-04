@@ -5,6 +5,7 @@ interface StartStopButtonProps {
   onStart: () => void
   onPause: () => void
   onResume: () => void
+  onReset: () => void
   canStart: boolean
 }
 
@@ -13,6 +14,7 @@ export function StartStopButton({
   onStart,
   onPause,
   onResume,
+  onReset,
   canStart,
 }: StartStopButtonProps) {
   const getButtonConfig = () => {
@@ -34,9 +36,9 @@ export function StartStopButton({
       case 'completed':
         return {
           label: 'Done',
-          onClick: () => {}, // Handled in settings modal (reset)
-          disabled: true,
-          className: 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed shadow-none',
+          onClick: onReset,
+          disabled: false,
+          className: 'bg-indigo-500 shadow-indigo-500/30 hover:bg-indigo-600 hover:shadow-indigo-500/40 focus:ring-indigo-500',
         }
       case 'idle':
       default:

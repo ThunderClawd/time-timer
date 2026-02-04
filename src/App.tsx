@@ -6,6 +6,8 @@ import { SettingsModal } from './components/SettingsModal'
 import { SeasonalDecorations } from './components/SeasonalDecorations'
 import { WeatherEffects } from './components/WeatherEffects'
 import { DebugPanel } from './components/DebugPanel'
+import { CompletionGlow } from './components/CompletionGlow'
+import { DayNightCycle } from './components/DayNightCycle'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -18,7 +20,6 @@ import {
   getCurrentSeason,
   getSeasonConfig,
   getDebugParams,
-  isNightTime,
   type Season,
 } from './themes/seasons'
 import type { Weather } from './themes/weather'
@@ -31,6 +32,7 @@ function App() {
   // Seasonal theme state
   const debugParams = useMemo(() => getDebugParams(), [])
   const [debugMode, setDebugMode] = useState(debugParams.debugMode)
+  const [debugTime, setDebugTime] = useState<number | null>(null)
   const [currentSeason, setCurrentSeason] = useState<Season>(
     debugParams.forceSeason || getCurrentSeason()
   )
@@ -40,10 +42,6 @@ function App() {
     }
     const season = debugParams.forceSeason || getCurrentSeason()
     const config = getSeasonConfig(season)
-    // Use night weather if it's nighttime
-    if (isNightTime()) {
-      return 'night'
-    }
     return config.defaultWeather as Weather
   })
 
@@ -146,7 +144,7 @@ function App() {
     // Update weather to match season's default if not in debug with forced weather
     if (!debugParams.forceWeather) {
       const config = getSeasonConfig(season)
-      setCurrentWeather(isNightTime() ? 'night' : config.defaultWeather as Weather)
+      setCurrentWeather(config.defaultWeather as Weather)
     }
   }
 
@@ -170,8 +168,14 @@ function App() {
           : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
       }}
     >
-      {/* Weather effects layer */}
-      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} />}
+      {/* Completion glow layer - lowest z-index */}
+      <CompletionGlow isComplete={timer.state === 'completed'} />
+
+      {/* Day/Night cycle layer - behind weather */}
+      <DayNightCycle debugTime={debugTime} />
+
+      {/* Weather effects layer - on top of day/night cycle */}
+      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} debugTime={debugTime} />}
 
       {/* Seasonal decorations layer */}
       {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
@@ -200,6 +204,7 @@ function App() {
             onStart={handleStart}
             onPause={timer.pause}
             onResume={timer.resume}
+            onReset={handleReset}
             canStart={timer.totalDuration > 0}
           />
         </div>
@@ -225,6 +230,8 @@ function App() {
           currentWeather={currentWeather}
           onSeasonChange={handleSeasonChange}
           onWeatherChange={handleWeatherChange}
+          debugTime={debugTime}
+          onDebugTimeChange={setDebugTime}
           onClose={handleDebugClose}
         />
       )}
