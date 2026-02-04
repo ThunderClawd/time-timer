@@ -36,6 +36,46 @@ const effectIcons: Record<string, string> = {
   none: '',
 };
 
+const effectDescriptions: Record<string, string> = {
+  glitter: 'Sparkling shimmer effect',
+  leaves: 'Falling leaves animation',
+  fireflies: 'Gentle glowing particles',
+  sparkles: 'Twinkling sparkle effect',
+  stars: 'Starry sky animation',
+  bubbles: 'Floating bubble effect',
+  petals: 'Falling petal animation',
+  confetti: 'Celebratory confetti',
+  hearts: 'Floating hearts effect',
+  dust: 'Gentle dust particles',
+  aurora: 'Northern lights shimmer',
+  fog: 'Misty atmosphere effect',
+};
+
+// Emoji mappings for decorative elements
+const decorationEmojis: Record<string, string> = {
+  snowmen: '⛄',
+  flowers: '🌸',
+  hearts: '💕',
+  stars: '⭐',
+  moons: '🌙',
+  suns: '☀️',
+  clouds: '☁️',
+  trees: '🌲',
+  mountains: '⛰️',
+  waves: '🌊',
+  birds: '🐦',
+  butterflies: '🦋',
+  lanterns: '🏮',
+  candles: '🕯️',
+  pumpkins: '🎃',
+  eggs: '🥚',
+  presents: '🎁',
+  fireworks: '🎆',
+  crystals: '💎',
+  mushrooms: '🍄',
+  leaves: '🍂',
+};
+
 export function ThemePreview({ theme, onClose, onApply }: ThemePreviewProps) {
   const unlocked = isThemeUnlocked(theme.id);
   const unlockDate = getUnlockDate(theme.id);
@@ -148,18 +188,37 @@ export function ThemePreview({ theme, onClose, onApply }: ThemePreviewProps) {
             </div>
 
             {/* Effects */}
-            <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.textSecondary }}>
-              <span className="font-medium">Effect:</span>
-              <span>
-                {effectIcons[theme.backgroundEffect]} {theme.backgroundEffect}
-              </span>
-            </div>
+            {theme.backgroundEffect !== 'none' && (
+              <div className="text-sm" style={{ color: theme.colors.textSecondary }}>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Effect:</span>
+                  <span>
+                    {effectIcons[theme.backgroundEffect]} {theme.backgroundEffect}
+                  </span>
+                </div>
+                {effectDescriptions[theme.backgroundEffect] && (
+                  <p className="text-xs mt-0.5 opacity-80 ml-[52px]">
+                    {effectDescriptions[theme.backgroundEffect]}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Decorative Elements */}
             {theme.decorativeElements.length > 0 && !theme.decorativeElements.includes('none') && (
-              <div className="flex items-center gap-2 text-sm" style={{ color: theme.colors.textSecondary }}>
+              <div className="text-sm" style={{ color: theme.colors.textSecondary }}>
                 <span className="font-medium">Decorations:</span>
-                <span>{theme.decorativeElements.join(', ')}</span>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {theme.decorativeElements.map((element) => (
+                    <span
+                      key={element}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/10"
+                    >
+                      <span>{decorationEmojis[element] || '•'}</span>
+                      <span className="text-xs">{element}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 

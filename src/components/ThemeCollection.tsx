@@ -35,6 +35,47 @@ const seasonEmojis: Record<Season, string> = {
   winter: '❄️',
 };
 
+// Emoji mappings for decorative elements
+const decorationEmojis: Record<string, string> = {
+  snowmen: '⛄',
+  flowers: '🌸',
+  hearts: '💕',
+  stars: '⭐',
+  moons: '🌙',
+  suns: '☀️',
+  clouds: '☁️',
+  trees: '🌲',
+  mountains: '⛰️',
+  waves: '🌊',
+  birds: '🐦',
+  butterflies: '🦋',
+  lanterns: '🏮',
+  candles: '🕯️',
+  pumpkins: '🎃',
+  eggs: '🥚',
+  presents: '🎁',
+  fireworks: '🎆',
+  crystals: '💎',
+  mushrooms: '🍄',
+  leaves: '🍂',
+};
+
+// Emoji mappings for background effects
+const effectEmojis: Record<string, string> = {
+  fog: '🌫️',
+  fireflies: '✨',
+  aurora: '🌌',
+  glitter: '✨',
+  sparkles: '💫',
+  stars: '⭐',
+  dust: '🌫️',
+  leaves: '🍂',
+  petals: '🌸',
+  confetti: '🎊',
+  hearts: '💕',
+  bubbles: '🫧',
+};
+
 type FilterOption = 'all' | Season | 'special';
 
 export function ThemeCollection({ onClose, onThemeChange, debugMode = false }: ThemeCollectionProps) {
@@ -292,6 +333,29 @@ export function ThemeCollection({ onClose, onThemeChange, debugMode = false }: T
                   {theme.isSpecial && (
                     <div className="absolute top-2 left-2 w-6 h-6 flex items-center justify-center">
                       <span className="text-lg">⭐</span>
+                    </div>
+                  )}
+
+                  {/* Decoration/Effect Indicators */}
+                  {unlocked && (
+                    <div className="absolute bottom-10 left-0 right-0 px-2 flex items-center gap-1 justify-end">
+                      {/* Decorations */}
+                      {theme.decorativeElements.length > 0 &&
+                        !theme.decorativeElements.includes('none') && (
+                          <span className="text-xs opacity-90 drop-shadow-md">
+                            {theme.decorativeElements
+                              .slice(0, 2)
+                              .map((el) => decorationEmojis[el] || '')
+                              .filter(Boolean)
+                              .join('')}
+                          </span>
+                        )}
+                      {/* Effect */}
+                      {theme.backgroundEffect !== 'none' && effectEmojis[theme.backgroundEffect] && (
+                        <span className="text-[10px] px-1 py-0.5 rounded bg-black/30 text-white flex items-center gap-0.5">
+                          <span>{effectEmojis[theme.backgroundEffect]}</span>
+                        </span>
+                      )}
                     </div>
                   )}
 
