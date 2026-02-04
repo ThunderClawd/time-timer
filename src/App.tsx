@@ -20,7 +20,6 @@ import {
   getCurrentSeason,
   getSeasonConfig,
   getDebugParams,
-  isNightTime,
   type Season,
 } from './themes/seasons'
 import type { Weather } from './themes/weather'
@@ -145,7 +144,7 @@ function App() {
     // Update weather to match season's default if not in debug with forced weather
     if (!debugParams.forceWeather) {
       const config = getSeasonConfig(season)
-      setCurrentWeather(isNightTime() ? 'night' : config.defaultWeather as Weather)
+      setCurrentWeather(config.defaultWeather as Weather)
     }
   }
 

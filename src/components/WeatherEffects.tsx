@@ -12,7 +12,7 @@ import {
   createShootingStar,
   updateShootingStar,
 } from '../themes/weather';
-import { createClouds, updateCloud, Cloud, Moon, createMoon } from '../themes/animations';
+import { createClouds, updateCloud, Cloud } from '../themes/animations';
 import { isNightTime } from '../themes/seasons';
 
 interface WeatherEffectsProps {
@@ -26,7 +26,6 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
   const cloudsRef = useRef<Cloud[]>([]);
   const splashesRef = useRef<Splash[]>([]);
   const shootingStarsRef = useRef<ShootingStar[]>([]);
-  const moonRef = useRef<Moon | null>(null);
   const lastShootingStarTime = useRef<number>(0);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
@@ -44,13 +43,6 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
         cloudsRef.current = createClouds(8); // More clouds
       } else {
         cloudsRef.current = [];
-      }
-
-      // Create moon for night
-      if (weather === 'night') {
-        moonRef.current = createMoon();
-      } else {
-        moonRef.current = null;
       }
     }
   }, [weather, dimensions.width, dimensions.height]);
