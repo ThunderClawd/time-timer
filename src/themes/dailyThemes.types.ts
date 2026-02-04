@@ -12,10 +12,10 @@ export type ThemeCategory =
   | 'nature'
   | 'festive';
 
+// Theme-specific background effects (NOT weather effects like snow/rain)
+// Weather effects are controlled separately by the weather system
 export type BackgroundEffect =
   | 'glitter'
-  | 'snow'
-  | 'rain'
   | 'leaves'
   | 'fireflies'
   | 'sparkles'

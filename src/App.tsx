@@ -6,6 +6,7 @@ import { StartStopButton } from './components/StartStopButton'
 import { SettingsModal } from './components/SettingsModal'
 import { SeasonalDecorations } from './components/SeasonalDecorations'
 import { WeatherEffects } from './components/WeatherEffects'
+import { ThemeEffects } from './components/ThemeEffects'
 import { DebugPanel } from './components/DebugPanel'
 import { CompletionGlow } from './components/CompletionGlow'
 import { DayNightCycle } from './components/DayNightCycle'
@@ -369,14 +370,19 @@ function App() {
       {/* Day/Night cycle layer - behind weather */}
       <DayNightCycle debugTime={debugTime} />
 
-      {/* Weather effects layer - on top of day/night cycle */}
-      {/* Show effects based on: weatherEffects toggle for seasonal, effects toggle for collection themes */}
-      {(preferences.weatherEffects || (dailyThemeEnabled && preferences.effects && activeCollectionTheme?.backgroundEffect !== 'none')) && (
+      {/* Weather effects layer - responds to weather API/debug mode */}
+      {/* Controlled by weatherEffects toggle - shows rain, snow, clouds, clear based on actual weather */}
+      {preferences.weatherEffects && (
         <WeatherEffects
           weather={currentWeather}
           debugTime={debugTime}
-          collectionTheme={dailyThemeEnabled && preferences.effects ? activeCollectionTheme : null}
         />
+      )}
+
+      {/* Theme effects layer - responds to collection theme's backgroundEffect */}
+      {/* Controlled by effects toggle - shows fog, fireflies, aurora, glitter, etc. from theme */}
+      {dailyThemeEnabled && preferences.effects && activeCollectionTheme && (
+        <ThemeEffects collectionTheme={activeCollectionTheme} />
       )}
 
       {/* Seasonal decorations layer */}
