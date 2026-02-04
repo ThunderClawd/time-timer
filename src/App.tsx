@@ -34,7 +34,7 @@ function App() {
   // Real weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [locationError, setLocationError] = useState<GeolocationError | null>(null)
-  const weatherFetchInterval = useRef<NodeJS.Timeout | null>(null)
+  const weatherFetchInterval = useRef<number | null>(null)
 
   // Seasonal theme state
   const debugParams = useMemo(() => getDebugParams(), [])

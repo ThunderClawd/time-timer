@@ -3,6 +3,7 @@ import type { Preferences } from '../utils'
 import type { GeolocationError } from '../utils/geolocation'
 import type { WeatherData } from '../utils/weatherApi'
 import { getGeolocationErrorMessage } from '../utils/geolocation'
+import { LocationMapPicker } from './LocationMapPicker'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -38,6 +39,7 @@ export function SettingsModal({
   weatherData,
 }: SettingsModalProps) {
   const [showManualLocation, setShowManualLocation] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(false)
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   // Handle ESC key
@@ -194,12 +196,20 @@ export function SettingsModal({
                       <p className="text-xs text-green-600 dark:text-green-400">
                         📍 Manual: {preferences.manualLocation.latitude.toFixed(4)}, {preferences.manualLocation.longitude.toFixed(4)}
                       </p>
-                      <button
-                        onClick={onManualLocationClear}
-                        className="text-xs text-green-600 dark:text-green-400 hover:underline"
-                      >
-                        Clear
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowMapPicker(true)}
+                          className="text-xs text-green-600 dark:text-green-400 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={onManualLocationClear}
+                          className="text-xs text-green-600 dark:text-green-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -210,12 +220,21 @@ export function SettingsModal({
                         <p className="text-xs text-red-600 dark:text-red-400 mb-2">
                           {getGeolocationErrorMessage(locationError)}
                         </p>
-                        <button
-                          onClick={() => setShowManualLocation(!showManualLocation)}
-                          className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
-                        >
-                          {showManualLocation ? '✕ Cancel' : '+ Set location manually'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowMapPicker(true)}
+                            className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
+                          >
+                            🗺️ Select on map
+                          </button>
+                          <span className="text-xs text-red-400 dark:text-red-500">or</span>
+                          <button
+                            onClick={() => setShowManualLocation(!showManualLocation)}
+                            className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
+                          >
+                            {showManualLocation ? '✕ Cancel' : '+ Enter coordinates'}
+                          </button>
+                        </div>
                       </div>
                     )}
                     
@@ -302,6 +321,17 @@ export function SettingsModal({
           )}
         </div>
       </div>
+
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <LocationMapPicker
+          initialPosition={preferences.manualLocation}
+          onLocationSelect={(lat, lng) => {
+            onManualLocationSet(lat, lng)
+          }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   )
 }
