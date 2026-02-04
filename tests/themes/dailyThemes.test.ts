@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  DAILY_THEMES,
   getThemeById,
   getThemeForDate,
   getThemesForSeason,
@@ -9,9 +8,8 @@ import {
   isLeapYear,
   getAllThemes,
   getThemesByCategory,
-  SPECIAL_THEMES,
 } from '../../src/themes/dailyThemes';
-import type { DailyTheme, ThemeCategory } from '../../src/themes/dailyThemes.types';
+import type { ThemeCategory } from '../../src/themes/dailyThemes.types';
 import { HOLIDAYS } from '../../src/themes/dailyThemes.types';
 
 describe('Daily Themes Data', () => {
