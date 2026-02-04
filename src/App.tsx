@@ -27,7 +27,8 @@ import {
 import type { Weather } from './themes/weather'
 import { requestLocation, type GeolocationError } from './utils/geolocation'
 import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
-import { autoUnlockTodayTheme, setActiveTheme, unlockAllThemes } from './utils/themeCollection'
+import { autoUnlockTodayTheme, setActiveTheme, unlockAllThemes, getCurrentEffectiveTheme } from './utils/themeCollection'
+import type { DailyTheme } from './themes/dailyThemes.types'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
@@ -35,6 +36,10 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [themeCollectionOpen, setThemeCollectionOpen] = useState(false)
   const [dailyThemeEnabled, setDailyThemeEnabled] = useState(true)
+  const [activeCollectionTheme, setActiveCollectionTheme] = useState<DailyTheme | null>(() => {
+    // Load the active theme on mount
+    return getCurrentEffectiveTheme()
+  })
 
   // Real weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
@@ -308,7 +313,9 @@ function App() {
   }
 
   const handleThemeChange = (themeId: string) => {
-    // Theme applied via collection
+    // Reload the effective theme to apply the change
+    const effectiveTheme = getCurrentEffectiveTheme()
+    setActiveCollectionTheme(effectiveTheme)
     console.log(`Applied theme: ${themeId}`)
   }
 
@@ -318,6 +325,10 @@ function App() {
     if (!newValue) {
       // When disabling, clear active theme to use seasonal
       setActiveTheme(null)
+      setActiveCollectionTheme(null)
+    } else {
+      // When enabling, load the effective theme
+      setActiveCollectionTheme(getCurrentEffectiveTheme())
     }
   }
 
@@ -328,14 +339,17 @@ function App() {
   // Determine if reset is available (timer is running, paused, or completed)
   const canReset = timer.state === 'running' || timer.state === 'paused' || timer.state === 'completed'
 
+  // Determine background gradient - collection theme takes priority
+  const backgroundGradient = dailyThemeEnabled && activeCollectionTheme
+    ? activeCollectionTheme.colors.backgroundGradient
+    : preferences.seasonalTheme
+      ? seasonConfig.colors.backgroundGradient
+      : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
+
   return (
     <div
       className="min-h-full transition-colors duration-500 relative overflow-hidden"
-      style={{
-        background: preferences.seasonalTheme
-          ? seasonConfig.colors.backgroundGradient
-          : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
-      }}
+      style={{ background: backgroundGradient }}
     >
       {/* Completion glow layer - lowest z-index */}
       <CompletionGlow isComplete={timer.state === 'completed'} />
