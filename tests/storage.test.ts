@@ -21,6 +21,8 @@ describe('storage', () => {
         weatherEffects: true,
         useRealWeather: false,
         manualLocation: undefined,
+        decorations: true,
+        effects: true,
       })
     })
 
@@ -69,6 +71,8 @@ describe('storage', () => {
         weatherEffects: true,
         useRealWeather: false,
         manualLocation: undefined,
+        decorations: true,
+        effects: true,
       })
     })
 
@@ -85,6 +89,8 @@ describe('storage', () => {
         weatherEffects: true,
         useRealWeather: false,
         manualLocation: undefined,
+        decorations: true,
+        effects: true,
       })
     })
   })

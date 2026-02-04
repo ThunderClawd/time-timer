@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { TimerDisplay } from './components'
 import { SettingsButton } from './components/SettingsButton'
+import { ThemeCollectionButton } from './components/ThemeCollectionButton'
 import { StartStopButton } from './components/StartStopButton'
 import { SettingsModal } from './components/SettingsModal'
 import { SeasonalDecorations } from './components/SeasonalDecorations'
 import { WeatherEffects } from './components/WeatherEffects'
+import { ThemeEffects } from './components/ThemeEffects'
 import { DebugPanel } from './components/DebugPanel'
 import { CompletionGlow } from './components/CompletionGlow'
 import { DayNightCycle } from './components/DayNightCycle'
+import { ThemeCollection } from './components/ThemeCollection'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -25,11 +28,19 @@ import {
 import type { Weather } from './themes/weather'
 import { requestLocation, type GeolocationError } from './utils/geolocation'
 import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
+import { autoUnlockTodayTheme, setActiveTheme, unlockAllThemes, getCurrentEffectiveTheme } from './utils/themeCollection'
+import type { DailyTheme } from './themes/dailyThemes.types'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
   const [selectedMinutes, setSelectedMinutes] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [themeCollectionOpen, setThemeCollectionOpen] = useState(false)
+  const [dailyThemeEnabled, setDailyThemeEnabled] = useState(true)
+  const [activeCollectionTheme, setActiveCollectionTheme] = useState<DailyTheme | null>(() => {
+    // Load the active theme on mount
+    return getCurrentEffectiveTheme()
+  })
 
   // Real weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
@@ -90,6 +101,26 @@ function App() {
     root.classList.remove('season-spring', 'season-summer', 'season-autumn', 'season-winter')
     root.classList.add(`season-${currentSeason}`)
   }, [currentSeason])
+
+  // Auto-unlock today's theme on app load
+  useEffect(() => {
+    const { unlocked, theme } = autoUnlockTodayTheme()
+    if (unlocked) {
+      console.log(`Unlocked today's theme: ${theme.name}`)
+    }
+  }, [])
+
+  // Open theme collection in debug mode if ?themes=true
+  // Also auto-unlock all themes in debug mode
+  useEffect(() => {
+    if (debugParams.themesDebug) {
+      const unlocked = unlockAllThemes()
+      if (unlocked > 0) {
+        console.log(`Debug mode: Unlocked ${unlocked} themes (all 127 themes now available)`)
+      }
+      setThemeCollectionOpen(true)
+    }
+  }, [debugParams.themesDebug])
 
   // Initialize audio context on first interaction
   useEffect(() => {
@@ -158,7 +189,7 @@ function App() {
     setPreferences((prev) => ({ ...prev, soundEnabled: newValue }))
   }
 
-  const handleThemeChange = (theme: 'auto' | 'light' | 'dark') => {
+  const handleDarkModeChange = (theme: 'auto' | 'light' | 'dark') => {
     savePreferences({ darkMode: theme })
     setPreferences((prev) => ({ ...prev, darkMode: theme }))
   }
@@ -173,6 +204,18 @@ function App() {
     const newValue = !preferences.weatherEffects
     savePreferences({ weatherEffects: newValue })
     setPreferences((prev) => ({ ...prev, weatherEffects: newValue }))
+  }
+
+  const handleDecorationsToggle = () => {
+    const newValue = !preferences.decorations
+    savePreferences({ decorations: newValue })
+    setPreferences((prev) => ({ ...prev, decorations: newValue }))
+  }
+
+  const handleEffectsToggle = () => {
+    const newValue = !preferences.effects
+    savePreferences({ effects: newValue })
+    setPreferences((prev) => ({ ...prev, effects: newValue }))
   }
 
   const handleRealWeatherToggle = async () => {
@@ -273,17 +316,53 @@ function App() {
     setDebugMode(false)
   }
 
+  const handleOpenThemeCollection = () => {
+    setSettingsOpen(false)
+    setThemeCollectionOpen(true)
+  }
+
+  const handleThemeCollectionClose = () => {
+    setThemeCollectionOpen(false)
+  }
+
+  const handleThemeChange = (themeId: string) => {
+    // Reload the effective theme to apply the change
+    const effectiveTheme = getCurrentEffectiveTheme()
+    setActiveCollectionTheme(effectiveTheme)
+    console.log(`Applied theme: ${themeId}`)
+  }
+
+  const handleDailyThemeToggle = () => {
+    const newValue = !dailyThemeEnabled
+    setDailyThemeEnabled(newValue)
+    if (!newValue) {
+      // When disabling, clear active theme to use seasonal
+      setActiveTheme(null)
+      setActiveCollectionTheme(null)
+    } else {
+      // When enabling, load the effective theme
+      setActiveCollectionTheme(getCurrentEffectiveTheme())
+    }
+  }
+
+  const handleOpenThemeDebug = () => {
+    setThemeCollectionOpen(true)
+  }
+
   // Determine if reset is available (timer is running, paused, or completed)
   const canReset = timer.state === 'running' || timer.state === 'paused' || timer.state === 'completed'
+
+  // Determine background gradient - collection theme takes priority
+  const backgroundGradient = dailyThemeEnabled && activeCollectionTheme
+    ? activeCollectionTheme.colors.backgroundGradient
+    : preferences.seasonalTheme
+      ? seasonConfig.colors.backgroundGradient
+      : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
 
   return (
     <div
       className="min-h-full transition-colors duration-500 relative overflow-hidden"
-      style={{
-        background: preferences.seasonalTheme
-          ? seasonConfig.colors.backgroundGradient
-          : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
-      }}
+      style={{ background: backgroundGradient }}
     >
       {/* Completion glow layer - lowest z-index */}
       <CompletionGlow isComplete={timer.state === 'completed'} />
@@ -291,11 +370,32 @@ function App() {
       {/* Day/Night cycle layer - behind weather */}
       <DayNightCycle debugTime={debugTime} />
 
-      {/* Weather effects layer - on top of day/night cycle */}
-      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} debugTime={debugTime} />}
+      {/* Weather effects layer - responds to weather API/debug mode */}
+      {/* Controlled by weatherEffects toggle - shows rain, snow, clouds, clear based on actual weather */}
+      {preferences.weatherEffects && (
+        <WeatherEffects
+          weather={currentWeather}
+          debugTime={debugTime}
+        />
+      )}
+
+      {/* Theme effects layer - responds to collection theme's backgroundEffect */}
+      {/* Controlled by effects toggle - shows fog, fireflies, aurora, glitter, etc. from theme */}
+      {dailyThemeEnabled && preferences.effects && activeCollectionTheme && (
+        <ThemeEffects collectionTheme={activeCollectionTheme} />
+      )}
 
       {/* Seasonal decorations layer */}
-      {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
+      {/* Show decorations based on: seasonalTheme toggle for seasonal (only when daily themes disabled), decorations toggle for collection themes */}
+      {((preferences.seasonalTheme && !dailyThemeEnabled) || (dailyThemeEnabled && preferences.decorations)) && (
+        <SeasonalDecorations
+          season={currentSeason}
+          collectionTheme={dailyThemeEnabled && preferences.decorations ? activeCollectionTheme : null}
+        />
+      )}
+
+      {/* Theme Collection button - top right (next to settings) */}
+      <ThemeCollectionButton onClick={() => setThemeCollectionOpen(true)} />
 
       {/* Settings button - top right */}
       <SettingsButton onClick={() => setSettingsOpen(true)} />
@@ -311,6 +411,7 @@ function App() {
             onDurationSet={handleDurationSet}
             season={currentSeason}
             seasonalThemeEnabled={preferences.seasonalTheme}
+            collectionTheme={dailyThemeEnabled ? activeCollectionTheme : null}
           />
         </div>
 
@@ -333,7 +434,7 @@ function App() {
         onClose={() => setSettingsOpen(false)}
         preferences={preferences}
         onSoundToggle={handleSoundToggle}
-        onThemeChange={handleThemeChange}
+        onThemeChange={handleDarkModeChange}
         onSeasonalThemeToggle={handleSeasonalThemeToggle}
         onWeatherEffectsToggle={handleWeatherEffectsToggle}
         onRealWeatherToggle={handleRealWeatherToggle}
@@ -343,7 +444,21 @@ function App() {
         canReset={canReset}
         locationError={locationError}
         weatherData={weatherData}
+        onOpenThemeCollection={handleOpenThemeCollection}
+        onDailyThemeToggle={handleDailyThemeToggle}
+        dailyThemeEnabled={dailyThemeEnabled}
+        onDecorationsToggle={handleDecorationsToggle}
+        onEffectsToggle={handleEffectsToggle}
       />
+
+      {/* Theme Collection Modal */}
+      {themeCollectionOpen && (
+        <ThemeCollection
+          onClose={handleThemeCollectionClose}
+          onThemeChange={handleThemeChange}
+          debugMode={debugParams.themesDebug || debugMode}
+        />
+      )}
 
       {/* Debug Panel - only in debug mode */}
       {debugMode && (
@@ -355,6 +470,7 @@ function App() {
           debugTime={debugTime}
           onDebugTimeChange={setDebugTime}
           onClose={handleDebugClose}
+          onOpenThemeDebug={handleOpenThemeDebug}
         />
       )}
     </div>

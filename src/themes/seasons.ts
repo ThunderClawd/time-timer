@@ -274,15 +274,17 @@ export function getDebugParams(): {
   debugMode: boolean;
   forceSeason: Season | null;
   forceWeather: string | null;
+  themesDebug: boolean;
 } {
   if (typeof window === 'undefined') {
-    return { debugMode: false, forceSeason: null, forceWeather: null };
+    return { debugMode: false, forceSeason: null, forceWeather: null, themesDebug: false };
   }
 
   const urlParams = new URLSearchParams(window.location.search);
   const debugMode = urlParams.get('debug') === 'true';
   const forceSeason = urlParams.get('season') as Season | null;
   const forceWeather = urlParams.get('weather');
+  const themesDebug = urlParams.get('themes') === 'true';
 
   // Validate season
   const validSeasons: Season[] = ['spring', 'summer', 'autumn', 'winter'];
@@ -292,6 +294,7 @@ export function getDebugParams(): {
     debugMode,
     forceSeason: validatedSeason,
     forceWeather,
+    themesDebug,
   };
 }
 

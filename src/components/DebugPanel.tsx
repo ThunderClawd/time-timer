@@ -9,6 +9,7 @@ interface DebugPanelProps {
   debugTime: number | null;
   onDebugTimeChange: (hour: number | null) => void;
   onClose: () => void;
+  onOpenThemeDebug?: () => void;
 }
 
 export function DebugPanel({
@@ -19,6 +20,7 @@ export function DebugPanel({
   debugTime,
   onDebugTimeChange,
   onClose,
+  onOpenThemeDebug,
 }: DebugPanelProps) {
   const detectedSeason = getCurrentSeason();
   const now = new Date();
@@ -173,10 +175,26 @@ export function DebugPanel({
         </div>
       </div>
 
+      {/* Theme Collection Debug */}
+      {onOpenThemeDebug && (
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Theme Collection</label>
+          <button
+            onClick={onOpenThemeDebug}
+            className="w-full px-3 py-2 text-sm font-medium rounded transition-colors bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+          >
+            Open All Themes (Debug Mode)
+          </button>
+        </div>
+      )}
+
       {/* URL hint */}
       <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
         <p className="text-xs text-gray-400 dark:text-gray-500">
           URL params: ?debug=true&season=winter&weather=snowy
+        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          Theme debug: ?themes=true
         </p>
       </div>
     </div>

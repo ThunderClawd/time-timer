@@ -40,7 +40,7 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
 
       // Create clouds for cloudy weather
       if (weather === 'cloudy') {
-        cloudsRef.current = createClouds(8); // More clouds
+        cloudsRef.current = createClouds(8);
       } else {
         cloudsRef.current = [];
       }
@@ -497,7 +497,7 @@ export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
         ctx.fillRect(0, 0, dimensions.width, dimensions.height);
       }
 
-      // Update and draw based on weather type
+      // Weather-based rendering
       switch (weather) {
         case 'rainy':
           particlesRef.current = updateParticles(

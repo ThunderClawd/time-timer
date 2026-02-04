@@ -1,9 +1,11 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
 import type { Preferences } from '../utils'
 import type { GeolocationError } from '../utils/geolocation'
 import type { WeatherData } from '../utils/weatherApi'
 import { getGeolocationErrorMessage } from '../utils/geolocation'
 import { LocationMapPicker } from './LocationMapPicker'
+import { getCollectionStats, getActiveTheme, getTodayTheme } from '../utils/themeCollection'
+import { getThemeById } from '../themes/dailyThemes'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -20,6 +22,11 @@ interface SettingsModalProps {
   canReset: boolean
   locationError: GeolocationError | null
   weatherData: WeatherData | null
+  onOpenThemeCollection?: () => void
+  onDailyThemeToggle?: () => void
+  dailyThemeEnabled?: boolean
+  onDecorationsToggle?: () => void
+  onEffectsToggle?: () => void
 }
 
 export function SettingsModal({
@@ -37,11 +44,26 @@ export function SettingsModal({
   canReset,
   locationError,
   weatherData,
+  onOpenThemeCollection,
+  onDailyThemeToggle,
+  dailyThemeEnabled = true,
+  onDecorationsToggle,
+  onEffectsToggle,
 }: SettingsModalProps) {
   const [showManualLocation, setShowManualLocation] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
+
+  // Theme collection info
+  const themeStats = useMemo(() => getCollectionStats(), [isOpen])
+  const activeThemeId = useMemo(() => getActiveTheme(), [isOpen])
+  const todayTheme = useMemo(() => getTodayTheme(), [isOpen])
+  const activeTheme = useMemo(() =>
+    activeThemeId ? getThemeById(activeThemeId) : todayTheme,
+    [activeThemeId, todayTheme]
+  )
+
   // Handle ESC key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -137,21 +159,135 @@ export function SettingsModal({
             </div>
           </section>
 
-          {/* Seasonal Theme Toggle */}
-          <section className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <SeasonIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          {/* Daily Theme Collection */}
+          {onOpenThemeCollection && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+                    <CollectionIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Daily Themes</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Collect unique themes daily
+                    </p>
+                  </div>
+                </div>
+                {onDailyThemeToggle && (
+                  <ToggleSwitch enabled={dailyThemeEnabled} onToggle={onDailyThemeToggle} />
+                )}
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Seasonal Theme</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Decorations based on current season
-                </p>
+
+              {/* Current Theme Info */}
+              {activeTheme && (
+                <div
+                  className="p-3 rounded-xl overflow-hidden relative"
+                  style={{ background: activeTheme.colors.backgroundGradient }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium opacity-70" style={{ color: activeTheme.colors.textPrimary }}>
+                        {activeThemeId ? 'Active Theme' : "Today's Theme"}
+                      </p>
+                      <p className="text-sm font-semibold" style={{ color: activeTheme.colors.textPrimary }}>
+                        {activeTheme.name}
+                      </p>
+                    </div>
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{
+                        background: `conic-gradient(${activeTheme.colors.timerStart} 0%, ${activeTheme.colors.timerMid} 50%, ${activeTheme.colors.timerEnd} 100%)`,
+                      }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full"
+                        style={{ backgroundColor: activeTheme.colors.timerBackground }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Collection Progress & Button */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-gray-500 dark:text-gray-400">Collection Progress</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {themeStats.totalCollected}/{themeStats.totalAvailable}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+                      style={{ width: `${themeStats.percentComplete}%` }}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={onOpenThemeCollection}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                >
+                  View All
+                </button>
               </div>
-            </div>
-            <ToggleSwitch enabled={preferences.seasonalTheme} onToggle={onSeasonalThemeToggle} />
-          </section>
+            </section>
+          )}
+
+          {/* Seasonal Theme Toggle - only show when daily themes are disabled */}
+          {!dailyThemeEnabled && (
+            <section className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <SeasonIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Seasonal Theme</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Decorations based on current season
+                  </p>
+                </div>
+              </div>
+              <ToggleSwitch enabled={preferences.seasonalTheme} onToggle={onSeasonalThemeToggle} />
+            </section>
+          )}
+
+          {/* Decorations Toggle */}
+          {onDecorationsToggle && dailyThemeEnabled && (
+            <section className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <DecorationsIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Decorations</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Theme decorative elements
+                  </p>
+                </div>
+              </div>
+              <ToggleSwitch enabled={preferences.decorations} onToggle={onDecorationsToggle} />
+            </section>
+          )}
+
+          {/* Effects Toggle */}
+          {onEffectsToggle && dailyThemeEnabled && (
+            <section className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <EffectsIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Effects</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Theme background effects
+                  </p>
+                </div>
+              </div>
+              <ToggleSwitch enabled={preferences.effects} onToggle={onEffectsToggle} />
+            </section>
+          )}
 
           {/* Weather Effects Toggle */}
           <section className="flex items-center justify-between">
@@ -170,6 +306,7 @@ export function SettingsModal({
           </section>
 
           {/* Use Real Weather Toggle */}
+          {preferences.weatherEffects && (
           <section>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -296,6 +433,7 @@ export function SettingsModal({
               </div>
             )}
           </section>
+          )}
 
           {/* Reset Timer */}
           {canReset && (
@@ -457,6 +595,30 @@ function LocationIcon({ className }: { className?: string }) {
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  )
+}
+
+function CollectionIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+  )
+}
+
+function DecorationsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+    </svg>
+  )
+}
+
+function EffectsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
     </svg>
   )
 }
