@@ -85,7 +85,7 @@ export const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
         { x: 88, y: 50, scale: 0.65, rotation: -30 },
       ],
     },
-    defaultWeather: 'sunny',
+    defaultWeather: 'clear',
   },
   summer: {
     name: 'Summer',
@@ -129,7 +129,7 @@ export const SEASON_CONFIGS: Record<Season, SeasonConfig> = {
         { x: 8, y: 50, scale: 0.7, rotation: 30 },
       ],
     },
-    defaultWeather: 'sunny',
+    defaultWeather: 'clear',
   },
   autumn: {
     name: 'Autumn',

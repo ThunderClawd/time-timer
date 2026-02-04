@@ -1,5 +1,5 @@
 // Weather effect configurations
-export type Weather = 'sunny' | 'rainy' | 'snowy' | 'cloudy' | 'night';
+export type Weather = 'clear' | 'rainy' | 'snowy' | 'cloudy';
 
 export interface WeatherConfig {
   name: string;
@@ -13,15 +13,15 @@ export interface WeatherConfig {
 }
 
 export const WEATHER_CONFIGS: Record<Weather, WeatherConfig> = {
-  sunny: {
-    name: 'Sunny',
-    particleCount: 25, // Floating dust particles in sunbeam
-    particleSpeed: { min: 0.2, max: 0.5 },
-    particleSize: { min: 1, max: 3 },
-    particleColor: '#FFD700',
-    particleOpacity: { min: 0.2, max: 0.5 },
+  clear: {
+    name: 'Clear',
+    particleCount: 60, // Dust particles (day) or stars (night)
+    particleSpeed: { min: 0, max: 0.5 },
+    particleSize: { min: 0.5, max: 3 },
+    particleColor: '#FFFACD',
+    particleOpacity: { min: 0.2, max: 1 },
     backgroundOverlay: 'rgba(255, 250, 205, 0.08)',
-    glowEffect: '0 0 100px 20px rgba(255, 215, 0, 0.15)',
+    glowEffect: '0 0 50px 10px rgba(255, 250, 205, 0.1)',
   },
   rainy: {
     name: 'Rainy',
@@ -50,16 +50,6 @@ export const WEATHER_CONFIGS: Record<Weather, WeatherConfig> = {
     particleColor: '#D3D3D3',
     particleOpacity: { min: 0, max: 0 },
     backgroundOverlay: 'rgba(169, 169, 169, 0.04)',
-  },
-  night: {
-    name: 'Clear Night',
-    particleCount: 60, // More twinkling stars
-    particleSpeed: { min: 0, max: 0 },
-    particleSize: { min: 0.5, max: 3 },
-    particleColor: '#FFFACD',
-    particleOpacity: { min: 0.2, max: 1 },
-    backgroundOverlay: 'rgba(15, 15, 60, 0.12)',
-    glowEffect: '0 0 50px 10px rgba(255, 250, 205, 0.1)',
   },
 };
 
@@ -120,12 +110,12 @@ export function createParticles(weather: Weather, width: number, height: number)
       const rand = Math.random();
       if (rand < 0.2) type = 'mist';
       else if (rand > 0.85) type = 'large';
-    } else if (weather === 'night') {
+    } else if (weather === 'clear') {
+      // Clear weather particles will be either dust or stars depending on time of day
+      // The actual rendering in WeatherEffects will determine which to show
       const rand = Math.random();
       if (rand < 0.1) type = 'brightStar';
       else type = 'star';
-    } else if (weather === 'sunny') {
-      type = 'dust';
     }
 
     const baseSize =
@@ -237,30 +227,25 @@ export function updateParticles(
         break;
       }
 
-      case 'night': {
-        // Stars twinkle with individual speeds
+      case 'clear': {
+        // Clear weather: stars twinkle at night, dust floats during day
         newParticle.twinklePhase += particle.twinkleSpeed * dt;
+        newParticle.wobble += 0.01 * dt;
 
-        // Brighter stars twinkle more noticeably
+        // Twinkling effect for stars (used at night)
         const twinkleRange = particle.type === 'brightStar' ? 0.7 : 0.4;
         const baseMin = particle.type === 'brightStar' ? 0.6 : config.particleOpacity.min;
-
-        newParticle.opacity =
+        const twinkleOpacity =
           baseMin + (Math.sin(newParticle.twinklePhase) * 0.5 + 0.5) * twinkleRange;
-        break;
-      }
 
-      case 'sunny': {
-        // Dust particles float gently
-        newParticle.wobble += 0.01 * dt;
-        newParticle.twinklePhase += 0.015 * dt;
-
-        // Gentle floating motion
+        // Gentle floating motion for dust (used during day)
         newParticle.y += Math.sin(newParticle.wobble) * 0.2;
         newParticle.x += Math.cos(newParticle.twinklePhase) * 0.15;
 
-        // Opacity shimmer
+        // Set opacity (actual visibility determined by time of day in rendering)
         newParticle.opacity = particle.baseOpacity * (0.7 + 0.3 * Math.sin(newParticle.wobble * 2));
+        // Store twinkle opacity for night rendering
+        newParticle.baseOpacity = twinkleOpacity;
 
         // Keep in bounds with gentle wrapping
         if (newParticle.y > height + 10) newParticle.y = -10;
@@ -327,7 +312,7 @@ export function updateShootingStar(star: ShootingStar, deltaTime: number): Shoot
  * Get all weather types for UI display
  */
 export function getAllWeatherTypes(): Weather[] {
-  return ['sunny', 'rainy', 'snowy', 'cloudy', 'night'];
+  return ['clear', 'rainy', 'snowy', 'cloudy'];
 }
 
 /**

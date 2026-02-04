@@ -6,6 +6,8 @@ interface DebugPanelProps {
   currentWeather: Weather;
   onSeasonChange: (season: Season) => void;
   onWeatherChange: (weather: Weather) => void;
+  debugTime: number | null;
+  onDebugTimeChange: (hour: number | null) => void;
   onClose: () => void;
 }
 
@@ -14,10 +16,13 @@ export function DebugPanel({
   currentWeather,
   onSeasonChange,
   onWeatherChange,
+  debugTime,
+  onDebugTimeChange,
   onClose,
 }: DebugPanelProps) {
   const detectedSeason = getCurrentSeason();
   const now = new Date();
+  const currentHour = debugTime !== null ? debugTime : now.getHours();
 
   return (
     <div
@@ -108,16 +113,15 @@ export function DebugPanel({
       </div>
 
       {/* Quick Weather Buttons */}
-      <div>
+      <div className="mb-3">
         <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Weather Effects</label>
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-4 gap-1">
           {getAllWeatherTypes().map(weather => {
             const icons: Record<Weather, string> = {
-              sunny: '\u2600\uFE0F',
-              rainy: '\uD83C\uDF27\uFE0F',
-              snowy: '\uD83C\uDF28\uFE0F',
-              cloudy: '\u2601\uFE0F',
-              night: '\uD83C\uDF19',
+              clear: '☀️',
+              rainy: '🌧️',
+              snowy: '🌨️',
+              cloudy: '☁️',
             };
             return (
               <button
@@ -133,6 +137,39 @@ export function DebugPanel({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Time Override Controls */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-300">Time Override</label>
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={debugTime !== null}
+              onChange={e => onDebugTimeChange(e.target.checked ? currentHour : null)}
+              className="mr-1"
+            />
+            <span className="text-xs text-gray-500 dark:text-gray-400">Enable</span>
+          </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min="0"
+            max="23"
+            value={currentHour}
+            disabled={debugTime === null}
+            onChange={e => onDebugTimeChange(parseInt(e.target.value))}
+            className="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+          />
+          <span className="text-sm font-mono text-gray-700 dark:text-gray-200 min-w-[3.5rem]">
+            {String(currentHour).padStart(2, '0')}:00
+          </span>
+        </div>
+        <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {debugTime !== null ? `Testing sun/moon at ${currentHour}:00` : 'Using real time'}
         </div>
       </div>
 

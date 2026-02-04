@@ -13,12 +13,14 @@ import {
   updateShootingStar,
 } from '../themes/weather';
 import { createClouds, updateCloud, Cloud, Moon, createMoon } from '../themes/animations';
+import { isNightTime } from '../themes/seasons';
 
 interface WeatherEffectsProps {
   weather: Weather;
+  debugTime?: number | null;
 }
 
-export function WeatherEffects({ weather }: WeatherEffectsProps) {
+export function WeatherEffects({ weather, debugTime }: WeatherEffectsProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const cloudsRef = useRef<Cloud[]>([]);
@@ -353,129 +355,130 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
     });
   }, []);
 
-  // Draw night sky with stars (moon now rendered by DayNightCycle)
-  const drawNight = useCallback(
-    (ctx: CanvasRenderingContext2D, _width: number, _height: number) => {
-      // Draw stars with twinkling
-      particlesRef.current.forEach(particle => {
-        const isBright = particle.type === 'brightStar';
-
-        // Star glow
-        const glowSize = particle.size * (isBright ? 6 : 3);
-        const gradient = ctx.createRadialGradient(
-          particle.x,
-          particle.y,
-          0,
-          particle.x,
-          particle.y,
-          glowSize
-        );
-
-        const color = isBright ? '255, 250, 220' : '255, 250, 240';
-        gradient.addColorStop(0, `rgba(${color}, ${particle.opacity})`);
-        gradient.addColorStop(0.3, `rgba(${color}, ${particle.opacity * 0.5})`);
-        gradient.addColorStop(1, `rgba(${color}, 0)`);
-
-        ctx.beginPath();
-        ctx.fillStyle = gradient;
-        ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Star core
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
-        ctx.arc(particle.x, particle.y, particle.size * (isBright ? 1.2 : 0.6), 0, Math.PI * 2);
-        ctx.fill();
-
-        // Bright stars get sparkle rays
-        if (isBright && particle.opacity > 0.7) {
-          ctx.strokeStyle = `rgba(255, 255, 255, ${particle.opacity * 0.4})`;
-          ctx.lineWidth = 0.5;
-          const rayLength = particle.size * 3;
-          for (let i = 0; i < 4; i++) {
-            const angle = (i * Math.PI) / 2 + Math.PI / 4;
-            ctx.beginPath();
-            ctx.moveTo(
-              particle.x - Math.cos(angle) * rayLength,
-              particle.y - Math.sin(angle) * rayLength
-            );
-            ctx.lineTo(
-              particle.x + Math.cos(angle) * rayLength,
-              particle.y + Math.sin(angle) * rayLength
-            );
-            ctx.stroke();
-          }
-        }
-      });
-
-      // Draw shooting stars
-      shootingStarsRef.current.forEach(star => {
-        const tailLength = star.length;
-        const gradient = ctx.createLinearGradient(
-          star.x - Math.cos(star.angle) * tailLength,
-          star.y - Math.sin(star.angle) * tailLength,
-          star.x,
-          star.y
-        );
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        gradient.addColorStop(0.7, `rgba(255, 255, 255, ${star.opacity * 0.3})`);
-        gradient.addColorStop(1, `rgba(255, 255, 255, ${star.opacity})`);
-
-        ctx.beginPath();
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.moveTo(
-          star.x - Math.cos(star.angle) * tailLength,
-          star.y - Math.sin(star.angle) * tailLength
-        );
-        ctx.lineTo(star.x, star.y);
-        ctx.stroke();
-
-        // Bright head
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
-        ctx.arc(star.x, star.y, 2, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    },
-    []
-  );
-
-  // Draw sunny effect with dust particles (sun now rendered by DayNightCycle)
-  const drawSunny = useCallback(
+  // Draw clear weather effect (stars at night, dust during day)
+  const drawClear = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, _height: number) => {
-      // Floating dust particles in sunbeam
-      const beamCenterX = width * 0.5;
-      const beamWidth = width * 0.4;
+      const date = debugTime !== null && debugTime !== undefined
+        ? (() => { const d = new Date(); d.setHours(debugTime, 0, 0, 0); return d; })()
+        : new Date();
+      const isNight = isNightTime(date);
 
-      particlesRef.current.forEach(particle => {
-        // Only show particles in sunbeam area
-        const distFromBeam = Math.abs(particle.x - beamCenterX);
-        if (distFromBeam < beamWidth) {
-          const beamFade = 1 - distFromBeam / beamWidth;
-          const alpha = particle.opacity * beamFade * 0.8;
+      if (isNight) {
+        // Night: Draw stars with twinkling
+        particlesRef.current.forEach(particle => {
+          const isBright = particle.type === 'brightStar';
 
+          // Star glow
+          const glowSize = particle.size * (isBright ? 6 : 3);
           const gradient = ctx.createRadialGradient(
             particle.x,
             particle.y,
             0,
             particle.x,
             particle.y,
-            particle.size * 2
+            glowSize
           );
-          gradient.addColorStop(0, `rgba(255, 250, 220, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(255, 245, 200, ${alpha * 0.5})`);
-          gradient.addColorStop(1, 'rgba(255, 240, 180, 0)');
+
+          const color = isBright ? '255, 250, 220' : '255, 250, 240';
+          gradient.addColorStop(0, `rgba(${color}, ${particle.baseOpacity})`);
+          gradient.addColorStop(0.3, `rgba(${color}, ${particle.baseOpacity * 0.5})`);
+          gradient.addColorStop(1, `rgba(${color}, 0)`);
 
           ctx.beginPath();
           ctx.fillStyle = gradient;
-          ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
+          ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
           ctx.fill();
-        }
-      });
+
+          // Star core
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255, 255, 255, ${particle.baseOpacity})`;
+          ctx.arc(particle.x, particle.y, particle.size * (isBright ? 1.2 : 0.6), 0, Math.PI * 2);
+          ctx.fill();
+
+          // Bright stars get sparkle rays
+          if (isBright && particle.baseOpacity > 0.7) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${particle.baseOpacity * 0.4})`;
+            ctx.lineWidth = 0.5;
+            const rayLength = particle.size * 3;
+            for (let i = 0; i < 4; i++) {
+              const angle = (i * Math.PI) / 2 + Math.PI / 4;
+              ctx.beginPath();
+              ctx.moveTo(
+                particle.x - Math.cos(angle) * rayLength,
+                particle.y - Math.sin(angle) * rayLength
+              );
+              ctx.lineTo(
+                particle.x + Math.cos(angle) * rayLength,
+                particle.y + Math.sin(angle) * rayLength
+              );
+              ctx.stroke();
+            }
+          }
+        });
+
+        // Draw shooting stars
+        shootingStarsRef.current.forEach(star => {
+          const tailLength = star.length;
+          const gradient = ctx.createLinearGradient(
+            star.x - Math.cos(star.angle) * tailLength,
+            star.y - Math.sin(star.angle) * tailLength,
+            star.x,
+            star.y
+          );
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          gradient.addColorStop(0.7, `rgba(255, 255, 255, ${star.opacity * 0.3})`);
+          gradient.addColorStop(1, `rgba(255, 255, 255, ${star.opacity})`);
+
+          ctx.beginPath();
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 2;
+          ctx.lineCap = 'round';
+          ctx.moveTo(
+            star.x - Math.cos(star.angle) * tailLength,
+            star.y - Math.sin(star.angle) * tailLength
+          );
+          ctx.lineTo(star.x, star.y);
+          ctx.stroke();
+
+          // Bright head
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+          ctx.arc(star.x, star.y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else {
+        // Day: Draw floating dust particles in sunbeam
+        const beamCenterX = width * 0.5;
+        const beamWidth = width * 0.4;
+
+        particlesRef.current.forEach(particle => {
+          // Only show particles in sunbeam area
+          const distFromBeam = Math.abs(particle.x - beamCenterX);
+          if (distFromBeam < beamWidth) {
+            const beamFade = 1 - distFromBeam / beamWidth;
+            const alpha = particle.opacity * beamFade * 0.8;
+
+            const gradient = ctx.createRadialGradient(
+              particle.x,
+              particle.y,
+              0,
+              particle.x,
+              particle.y,
+              particle.size * 2
+            );
+            gradient.addColorStop(0, `rgba(255, 250, 220, ${alpha})`);
+            gradient.addColorStop(0.5, `rgba(255, 245, 200, ${alpha * 0.5})`);
+            gradient.addColorStop(1, 'rgba(255, 240, 180, 0)');
+
+            ctx.beginPath();
+            ctx.fillStyle = gradient;
+            ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
     },
-    []
+    [debugTime]
   );
 
   // Animation loop
@@ -533,7 +536,7 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
           drawClouds(ctx, dimensions.width, dimensions.height);
           break;
 
-        case 'night': {
+        case 'clear': {
           particlesRef.current = updateParticles(
             particlesRef.current,
             weather,
@@ -542,64 +545,58 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
             deltaTime
           );
 
-          // Occasionally spawn shooting star (average every 8-15 seconds)
-          if (time - lastShootingStarTime.current > 8000 + Math.random() * 7000) {
-            if (Math.random() > 0.7) {
-              shootingStarsRef.current.push(
-                createShootingStar(dimensions.width, dimensions.height)
-              );
-              lastShootingStarTime.current = time;
+          const date = debugTime !== null && debugTime !== undefined
+            ? (() => { const d = new Date(); d.setHours(debugTime, 0, 0, 0); return d; })()
+            : new Date();
+          const isNight = isNightTime(date);
+
+          if (isNight) {
+            // Occasionally spawn shooting star (average every 8-15 seconds)
+            if (time - lastShootingStarTime.current > 8000 + Math.random() * 7000) {
+              if (Math.random() > 0.7) {
+                shootingStarsRef.current.push(
+                  createShootingStar(dimensions.width, dimensions.height)
+                );
+                lastShootingStarTime.current = time;
+              }
             }
+
+            // Update shooting stars
+            shootingStarsRef.current = shootingStarsRef.current
+              .map(star => updateShootingStar(star, deltaTime))
+              .filter((star): star is ShootingStar => star !== null);
+
+            // Draw night ambient glow
+            const nightGradient = ctx.createRadialGradient(
+              dimensions.width * 0.5,
+              dimensions.height * 0.3,
+              0,
+              dimensions.width * 0.5,
+              dimensions.height * 0.3,
+              dimensions.width * 0.7
+            );
+            nightGradient.addColorStop(0, 'rgba(20, 20, 60, 0.02)');
+            nightGradient.addColorStop(1, 'rgba(15, 15, 45, 0.08)');
+            ctx.fillStyle = nightGradient;
+            ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+          } else {
+            // Draw day warm overlay
+            const sunnyGradient = ctx.createRadialGradient(
+              dimensions.width * 0.85,
+              dimensions.height * 0.1,
+              0,
+              dimensions.width * 0.5,
+              dimensions.height * 0.5,
+              dimensions.width * 0.8
+            );
+            sunnyGradient.addColorStop(0, 'rgba(255, 245, 200, 0.08)');
+            sunnyGradient.addColorStop(0.5, 'rgba(255, 240, 180, 0.03)');
+            sunnyGradient.addColorStop(1, 'rgba(255, 235, 160, 0)');
+            ctx.fillStyle = sunnyGradient;
+            ctx.fillRect(0, 0, dimensions.width, dimensions.height);
           }
 
-          // Update shooting stars
-          shootingStarsRef.current = shootingStarsRef.current
-            .map(star => updateShootingStar(star, deltaTime))
-            .filter((star): star is ShootingStar => star !== null);
-
-          // Draw night ambient glow
-          const nightGradient = ctx.createRadialGradient(
-            dimensions.width * 0.5,
-            dimensions.height * 0.3,
-            0,
-            dimensions.width * 0.5,
-            dimensions.height * 0.3,
-            dimensions.width * 0.7
-          );
-          nightGradient.addColorStop(0, 'rgba(20, 20, 60, 0.02)');
-          nightGradient.addColorStop(1, 'rgba(15, 15, 45, 0.08)');
-          ctx.fillStyle = nightGradient;
-          ctx.fillRect(0, 0, dimensions.width, dimensions.height);
-
-          drawNight(ctx, dimensions.width, dimensions.height);
-          break;
-        }
-
-        case 'sunny': {
-          particlesRef.current = updateParticles(
-            particlesRef.current,
-            weather,
-            dimensions.width,
-            dimensions.height,
-            deltaTime
-          );
-
-          // Warm overlay
-          const sunnyGradient = ctx.createRadialGradient(
-            dimensions.width * 0.85,
-            dimensions.height * 0.1,
-            0,
-            dimensions.width * 0.5,
-            dimensions.height * 0.5,
-            dimensions.width * 0.8
-          );
-          sunnyGradient.addColorStop(0, 'rgba(255, 245, 200, 0.08)');
-          sunnyGradient.addColorStop(0.5, 'rgba(255, 240, 180, 0.03)');
-          sunnyGradient.addColorStop(1, 'rgba(255, 235, 160, 0)');
-          ctx.fillStyle = sunnyGradient;
-          ctx.fillRect(0, 0, dimensions.width, dimensions.height);
-
-          drawSunny(ctx, dimensions.width, dimensions.height);
+          drawClear(ctx, dimensions.width, dimensions.height);
           break;
         }
       }
@@ -609,7 +606,7 @@ export function WeatherEffects({ weather }: WeatherEffectsProps) {
 
     animationId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationId);
-  }, [weather, dimensions, config, drawRain, drawSnow, drawClouds, drawNight, drawSunny]);
+  }, [weather, dimensions, config, drawRain, drawSnow, drawClouds, drawClear, debugTime]);
 
   return (
     <canvas

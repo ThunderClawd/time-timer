@@ -33,6 +33,7 @@ function App() {
   // Seasonal theme state
   const debugParams = useMemo(() => getDebugParams(), [])
   const [debugMode, setDebugMode] = useState(debugParams.debugMode)
+  const [debugTime, setDebugTime] = useState<number | null>(null)
   const [currentSeason, setCurrentSeason] = useState<Season>(
     debugParams.forceSeason || getCurrentSeason()
   )
@@ -42,10 +43,6 @@ function App() {
     }
     const season = debugParams.forceSeason || getCurrentSeason()
     const config = getSeasonConfig(season)
-    // Use night weather if it's nighttime
-    if (isNightTime()) {
-      return 'night'
-    }
     return config.defaultWeather as Weather
   })
 
@@ -176,10 +173,10 @@ function App() {
       <CompletionGlow isComplete={timer.state === 'completed'} />
 
       {/* Day/Night cycle layer - behind weather */}
-      <DayNightCycle />
+      <DayNightCycle debugTime={debugTime} />
 
       {/* Weather effects layer - on top of day/night cycle */}
-      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} />}
+      {preferences.weatherEffects && <WeatherEffects weather={currentWeather} debugTime={debugTime} />}
 
       {/* Seasonal decorations layer */}
       {preferences.seasonalTheme && <SeasonalDecorations season={currentSeason} />}
@@ -234,6 +231,8 @@ function App() {
           currentWeather={currentWeather}
           onSeasonChange={handleSeasonChange}
           onWeatherChange={handleWeatherChange}
+          debugTime={debugTime}
+          onDebugTimeChange={setDebugTime}
           onClose={handleDebugClose}
         />
       )}

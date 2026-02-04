@@ -1,26 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { getSunPosition, getMoonPosition, type CelestialPosition } from '../utils/time'
 
-export function DayNightCycle() {
+interface DayNightCycleProps {
+  debugTime?: number | null;
+}
+
+export function DayNightCycle({ debugTime }: DayNightCycleProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-  const [sunPos, setSunPos] = useState<CelestialPosition>(() => getSunPosition())
-  const [moonPos, setMoonPos] = useState<CelestialPosition>(() => getMoonPosition())
+  
+  // Helper to get Date with debug time if provided
+  const getDebugDate = () => {
+    if (debugTime !== null && debugTime !== undefined) {
+      const date = new Date()
+      date.setHours(debugTime, 0, 0, 0)
+      return date
+    }
+    return new Date()
+  }
+  
+  const [sunPos, setSunPos] = useState<CelestialPosition>(() => getSunPosition(getDebugDate()))
+  const [moonPos, setMoonPos] = useState<CelestialPosition>(() => getMoonPosition(getDebugDate()))
 
-  // Update positions every minute
+  // Update positions every minute or when debugTime changes
   useEffect(() => {
     const updatePositions = () => {
-      setSunPos(getSunPosition())
-      setMoonPos(getMoonPosition())
+      const date = getDebugDate()
+      setSunPos(getSunPosition(date))
+      setMoonPos(getMoonPosition(date))
     }
 
     // Update immediately
     updatePositions()
 
-    // Update every minute
-    const interval = setInterval(updatePositions, 60000)
-    return () => clearInterval(interval)
-  }, [])
+    // Update every minute (unless debug time is set, then we only update when debugTime changes)
+    if (debugTime === null || debugTime === undefined) {
+      const interval = setInterval(updatePositions, 60000)
+      return () => clearInterval(interval)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debugTime])
 
   // Handle resize
   useEffect(() => {
