@@ -1,9 +1,11 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
 import type { Preferences } from '../utils'
 import type { GeolocationError } from '../utils/geolocation'
 import type { WeatherData } from '../utils/weatherApi'
 import { getGeolocationErrorMessage } from '../utils/geolocation'
 import { LocationMapPicker } from './LocationMapPicker'
+import { getCollectionStats, getActiveTheme, getTodayTheme } from '../utils/themeCollection'
+import { getThemeById } from '../themes/dailyThemes'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -20,6 +22,9 @@ interface SettingsModalProps {
   canReset: boolean
   locationError: GeolocationError | null
   weatherData: WeatherData | null
+  onOpenThemeCollection?: () => void
+  onDailyThemeToggle?: () => void
+  dailyThemeEnabled?: boolean
 }
 
 export function SettingsModal({
@@ -37,11 +42,24 @@ export function SettingsModal({
   canReset,
   locationError,
   weatherData,
+  onOpenThemeCollection,
+  onDailyThemeToggle,
+  dailyThemeEnabled = true,
 }: SettingsModalProps) {
   const [showManualLocation, setShowManualLocation] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
+
+  // Theme collection info
+  const themeStats = useMemo(() => getCollectionStats(), [isOpen])
+  const activeThemeId = useMemo(() => getActiveTheme(), [isOpen])
+  const todayTheme = useMemo(() => getTodayTheme(), [isOpen])
+  const activeTheme = useMemo(() =>
+    activeThemeId ? getThemeById(activeThemeId) : todayTheme,
+    [activeThemeId, todayTheme]
+  )
+
   // Handle ESC key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -136,6 +154,82 @@ export function SettingsModal({
               />
             </div>
           </section>
+
+          {/* Daily Theme Collection */}
+          {onOpenThemeCollection && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+                    <CollectionIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Daily Themes</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Collect unique themes daily
+                    </p>
+                  </div>
+                </div>
+                {onDailyThemeToggle && (
+                  <ToggleSwitch enabled={dailyThemeEnabled} onToggle={onDailyThemeToggle} />
+                )}
+              </div>
+
+              {/* Current Theme Info */}
+              {activeTheme && (
+                <div
+                  className="p-3 rounded-xl overflow-hidden relative"
+                  style={{ background: activeTheme.colors.backgroundGradient }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium opacity-70" style={{ color: activeTheme.colors.textPrimary }}>
+                        {activeThemeId ? 'Active Theme' : "Today's Theme"}
+                      </p>
+                      <p className="text-sm font-semibold" style={{ color: activeTheme.colors.textPrimary }}>
+                        {activeTheme.name}
+                      </p>
+                    </div>
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{
+                        background: `conic-gradient(${activeTheme.colors.timerStart} 0%, ${activeTheme.colors.timerMid} 50%, ${activeTheme.colors.timerEnd} 100%)`,
+                      }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full"
+                        style={{ backgroundColor: activeTheme.colors.timerBackground }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Collection Progress & Button */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-gray-500 dark:text-gray-400">Collection Progress</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {themeStats.totalCollected}/{themeStats.totalAvailable}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+                      style={{ width: `${themeStats.percentComplete}%` }}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={onOpenThemeCollection}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                >
+                  View All
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* Seasonal Theme Toggle */}
           <section className="flex items-center justify-between">
@@ -457,6 +551,14 @@ function LocationIcon({ className }: { className?: string }) {
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  )
+}
+
+function CollectionIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
     </svg>
   )
 }

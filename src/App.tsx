@@ -8,6 +8,7 @@ import { WeatherEffects } from './components/WeatherEffects'
 import { DebugPanel } from './components/DebugPanel'
 import { CompletionGlow } from './components/CompletionGlow'
 import { DayNightCycle } from './components/DayNightCycle'
+import { ThemeCollection } from './components/ThemeCollection'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -25,11 +26,14 @@ import {
 import type { Weather } from './themes/weather'
 import { requestLocation, type GeolocationError } from './utils/geolocation'
 import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
+import { autoUnlockTodayTheme, getCurrentEffectiveTheme, setActiveTheme } from './utils/themeCollection'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
   const [selectedMinutes, setSelectedMinutes] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [themeCollectionOpen, setThemeCollectionOpen] = useState(false)
+  const [dailyThemeEnabled, setDailyThemeEnabled] = useState(true)
 
   // Real weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
@@ -90,6 +94,21 @@ function App() {
     root.classList.remove('season-spring', 'season-summer', 'season-autumn', 'season-winter')
     root.classList.add(`season-${currentSeason}`)
   }, [currentSeason])
+
+  // Auto-unlock today's theme on app load
+  useEffect(() => {
+    const { unlocked, theme } = autoUnlockTodayTheme()
+    if (unlocked) {
+      console.log(`Unlocked today's theme: ${theme.name}`)
+    }
+  }, [])
+
+  // Open theme collection in debug mode if ?themes=true
+  useEffect(() => {
+    if (debugParams.themesDebug) {
+      setThemeCollectionOpen(true)
+    }
+  }, [debugParams.themesDebug])
 
   // Initialize audio context on first interaction
   useEffect(() => {
@@ -158,7 +177,7 @@ function App() {
     setPreferences((prev) => ({ ...prev, soundEnabled: newValue }))
   }
 
-  const handleThemeChange = (theme: 'auto' | 'light' | 'dark') => {
+  const handleDarkModeChange = (theme: 'auto' | 'light' | 'dark') => {
     savePreferences({ darkMode: theme })
     setPreferences((prev) => ({ ...prev, darkMode: theme }))
   }
@@ -273,6 +292,33 @@ function App() {
     setDebugMode(false)
   }
 
+  const handleOpenThemeCollection = () => {
+    setSettingsOpen(false)
+    setThemeCollectionOpen(true)
+  }
+
+  const handleThemeCollectionClose = () => {
+    setThemeCollectionOpen(false)
+  }
+
+  const handleThemeChange = (themeId: string) => {
+    // Theme applied via collection
+    console.log(`Applied theme: ${themeId}`)
+  }
+
+  const handleDailyThemeToggle = () => {
+    const newValue = !dailyThemeEnabled
+    setDailyThemeEnabled(newValue)
+    if (!newValue) {
+      // When disabling, clear active theme to use seasonal
+      setActiveTheme(null)
+    }
+  }
+
+  const handleOpenThemeDebug = () => {
+    setThemeCollectionOpen(true)
+  }
+
   // Determine if reset is available (timer is running, paused, or completed)
   const canReset = timer.state === 'running' || timer.state === 'paused' || timer.state === 'completed'
 
@@ -333,7 +379,7 @@ function App() {
         onClose={() => setSettingsOpen(false)}
         preferences={preferences}
         onSoundToggle={handleSoundToggle}
-        onThemeChange={handleThemeChange}
+        onThemeChange={handleDarkModeChange}
         onSeasonalThemeToggle={handleSeasonalThemeToggle}
         onWeatherEffectsToggle={handleWeatherEffectsToggle}
         onRealWeatherToggle={handleRealWeatherToggle}
@@ -343,7 +389,19 @@ function App() {
         canReset={canReset}
         locationError={locationError}
         weatherData={weatherData}
+        onOpenThemeCollection={handleOpenThemeCollection}
+        onDailyThemeToggle={handleDailyThemeToggle}
+        dailyThemeEnabled={dailyThemeEnabled}
       />
+
+      {/* Theme Collection Modal */}
+      {themeCollectionOpen && (
+        <ThemeCollection
+          onClose={handleThemeCollectionClose}
+          onThemeChange={handleThemeChange}
+          debugMode={debugParams.themesDebug || debugMode}
+        />
+      )}
 
       {/* Debug Panel - only in debug mode */}
       {debugMode && (
@@ -355,6 +413,7 @@ function App() {
           debugTime={debugTime}
           onDebugTimeChange={setDebugTime}
           onClose={handleDebugClose}
+          onOpenThemeDebug={handleOpenThemeDebug}
         />
       )}
     </div>
