@@ -57,7 +57,7 @@ describe('ThemeUnlockPopup', () => {
     )
 
     expect(screen.getByText('Cherry Blossom')).toBeInTheDocument()
-    expect(screen.getByText('New Theme Collected!')).toBeInTheDocument()
+    expect(screen.getByText('New Theme Collected! 🎨')).toBeInTheDocument()
     expect(screen.getByText('A beautiful spring day theme')).toBeInTheDocument()
     expect(screen.getByText('nature')).toBeInTheDocument()
     expect(screen.getByText('light')).toBeInTheDocument()

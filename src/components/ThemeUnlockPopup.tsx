@@ -68,9 +68,10 @@ export function ThemeUnlockPopup({ theme, onDismiss, onEquip }: ThemeUnlockPopup
 
   return (
     <div
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm mx-auto px-4 ${
+      className={`fixed z-50 inset-x-3 bottom-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-8 sm:w-full sm:max-w-sm ${
         isExiting ? 'animate-fade-out' : 'animate-slide-up'
       }`}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       role="dialog"
       aria-labelledby="theme-unlock-title"
       aria-describedby="theme-unlock-description"
@@ -78,47 +79,47 @@ export function ThemeUnlockPopup({ theme, onDismiss, onEquip }: ThemeUnlockPopup
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
         {/* Banner with theme gradient */}
         <div
-          className="h-24 relative flex items-center justify-center"
+          className="h-20 sm:h-24 relative flex items-center justify-center"
           style={{ background: theme.colors.backgroundGradient }}
         >
           {/* Large emoji */}
-          <span className="text-5xl drop-shadow-lg" role="img" aria-label="theme emoji">
+          <span className="text-4xl sm:text-5xl drop-shadow-lg" role="img" aria-label="theme emoji">
             {getThemeEmoji(theme)}
           </span>
 
           {/* Sparkle decorations */}
-          <div className="absolute top-2 left-4 text-xl animate-pulse">✨</div>
-          <div className="absolute top-4 right-6 text-lg animate-pulse" style={{ animationDelay: '0.3s' }}>✨</div>
-          <div className="absolute bottom-3 left-8 text-sm animate-pulse" style={{ animationDelay: '0.6s' }}>✨</div>
+          <div className="absolute top-2 left-4 text-lg sm:text-xl animate-pulse">✨</div>
+          <div className="absolute top-3 right-6 text-base sm:text-lg animate-pulse" style={{ animationDelay: '0.3s' }}>✨</div>
+          <div className="absolute bottom-2 left-8 text-xs sm:text-sm animate-pulse" style={{ animationDelay: '0.6s' }}>✨</div>
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           {/* Title */}
           <h2
             id="theme-unlock-title"
-            className="text-lg font-bold text-center text-gray-900 dark:text-white mb-1"
+            className="text-base sm:text-lg font-bold text-center text-gray-900 dark:text-white mb-0.5 sm:mb-1"
           >
-            New Theme Collected!
+            New Theme Collected! 🎨
           </h2>
 
           {/* Theme name */}
           <p
             id="theme-unlock-description"
-            className="text-xl font-semibold text-center text-gray-800 dark:text-gray-100 mb-2"
+            className="text-lg sm:text-xl font-semibold text-center text-gray-800 dark:text-gray-100 mb-1 sm:mb-2"
           >
             {theme.name}
           </p>
 
           {/* Description/tagline */}
           {theme.description && (
-            <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-3">
+            <p className="text-xs sm:text-sm text-center text-gray-600 dark:text-gray-400 mb-2 sm:mb-3 line-clamp-2">
               {theme.description}
             </p>
           )}
 
           {/* Category badges */}
-          <div className="flex justify-center gap-2 mb-4">
+          <div className="flex justify-center flex-wrap gap-1.5 mb-3 sm:mb-4">
             {theme.categories.map((category) => (
               <span
                 key={category}
@@ -130,16 +131,16 @@ export function ThemeUnlockPopup({ theme, onDismiss, onEquip }: ThemeUnlockPopup
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <button
               onClick={handleDismiss}
-              className="flex-1 py-2.5 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500/50"
+              className="flex-1 py-2.5 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500/50"
             >
               Dismiss
             </button>
             <button
               onClick={handleEquip}
-              className="flex-1 py-2.5 px-4 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="flex-1 py-2.5 px-3 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl hover:from-purple-600 hover:to-pink-600 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
             >
               Equip Now
             </button>
