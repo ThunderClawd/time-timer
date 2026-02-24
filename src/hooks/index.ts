@@ -1,2 +1,6 @@
 export { useTimer } from './useTimer'
 export type { TimerState } from './useTimer'
+export { useAuth } from './useAuth'
+export type { AuthState } from './useAuth'
+export { useSync } from './useSync'
+export type { SyncState } from './useSync'

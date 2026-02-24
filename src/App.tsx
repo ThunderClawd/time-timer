@@ -12,7 +12,8 @@ import { CompletionGlow } from './components/CompletionGlow'
 import { DayNightCycle } from './components/DayNightCycle'
 import { ThemeCollection } from './components/ThemeCollection'
 import { ThemeUnlockPopup } from './components/ThemeUnlockPopup'
-import { useTimer } from './hooks'
+import { AuthButton } from './components/AuthButton'
+import { useTimer, useAuth, useSync } from './hooks'
 import {
   playCompletionSound,
   initAudioContext,
@@ -29,11 +30,12 @@ import {
 import type { Weather } from './themes/weather'
 import { requestLocation, type GeolocationError } from './utils/geolocation'
 import { fetchWeather, isWeatherDataFresh, type WeatherData } from './utils/weatherApi'
-import { autoUnlockTodayTheme, setActiveTheme, unlockAllThemes, getCurrentEffectiveTheme } from './utils/themeCollection'
+import { autoUnlockTodayTheme, setActiveTheme, unlockAllThemes, getCurrentEffectiveTheme, loadThemeCollection, saveThemeCollection } from './utils/themeCollection'
 import type { DailyTheme } from './themes/dailyThemes.types'
 
 function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
+  const [themeCollection, setThemeCollection] = useState(loadThemeCollection)
   const [selectedMinutes, setSelectedMinutes] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [themeCollectionOpen, setThemeCollectionOpen] = useState(false)
@@ -43,6 +45,23 @@ function App() {
     return getCurrentEffectiveTheme()
   })
   const [newlyUnlockedTheme, setNewlyUnlockedTheme] = useState<DailyTheme | null>(null)
+
+  // Auth + cross-device sync
+  const auth = useAuth()
+  useSync({
+    user: auth.user,
+    preferences,
+    themeCollection,
+    onPreferencesLoaded: (remote) => {
+      savePreferences(remote)
+      setPreferences((prev) => ({ ...prev, ...remote }))
+    },
+    onThemeCollectionLoaded: (remote) => {
+      saveThemeCollection(remote)
+      setThemeCollection(remote)
+      setActiveCollectionTheme(getCurrentEffectiveTheme())
+    },
+  })
 
   // Real weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
@@ -159,7 +178,7 @@ function App() {
     }
 
     // Set up interval to check every 5 minutes (actual refresh only if data is stale)
-    weatherFetchInterval.current = setInterval(refreshWeather, 5 * 60 * 1000)
+    weatherFetchInterval.current = window.setInterval(refreshWeather, 5 * 60 * 1000)
 
     return () => {
       if (weatherFetchInterval.current) {
@@ -332,6 +351,8 @@ function App() {
     // Reload the effective theme to apply the change
     const effectiveTheme = getCurrentEffectiveTheme()
     setActiveCollectionTheme(effectiveTheme)
+    // Keep themeCollection state in sync for Supabase sync
+    setThemeCollection(loadThemeCollection())
     console.log(`Applied theme: ${themeId}`)
   }
 
@@ -396,6 +417,9 @@ function App() {
           collectionTheme={dailyThemeEnabled && preferences.decorations ? activeCollectionTheme : null}
         />
       )}
+
+      {/* Auth button - top left */}
+      <AuthButton auth={auth} />
 
       {/* Theme Collection button - top right (next to settings) */}
       <ThemeCollectionButton onClick={() => setThemeCollectionOpen(true)} />
