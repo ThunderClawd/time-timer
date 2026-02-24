@@ -52,20 +52,23 @@ function computeRemaining(s: PersistedState): number {
 
 // ─── Service-worker notification helpers ────────────────────────────────────
 
-function swPostMessage(msg: object): void {
+async function swPostMessage(msg: object): Promise<void> {
   try {
-    navigator.serviceWorker?.controller?.postMessage(msg)
+    if (!navigator.serviceWorker) return
+    const reg = await navigator.serviceWorker.ready
+    const worker = reg.active
+    if (worker) worker.postMessage(msg)
   } catch {
     /* SW unavailable */
   }
 }
 
-function scheduleSwNotification(delayMs: number): void {
-  swPostMessage({ type: 'SCHEDULE_NOTIFICATION', delayMs })
+async function scheduleSwNotification(delayMs: number): Promise<void> {
+  await swPostMessage({ type: 'SCHEDULE_NOTIFICATION', delayMs })
 }
 
-function cancelSwNotification(): void {
-  swPostMessage({ type: 'CANCEL_NOTIFICATION' })
+async function cancelSwNotification(): Promise<void> {
+  await swPostMessage({ type: 'CANCEL_NOTIFICATION' })
 }
 
 function requestNotificationPermission(): void {
@@ -105,6 +108,11 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
   const persistRef = useRef<PersistedState | null>(null)  // mirrors latest saved state
   const onCompleteRef = useRef(onComplete)
   useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
+
+  // ── Request notification permission on mount ────────────────────────────────
+  useEffect(() => {
+    requestNotificationPermission()
+  }, [])
 
   // ── RAF tick (display only – accurate because we read Date.now()) ────────
   const tick = useCallback(() => {
@@ -164,7 +172,7 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
       // Re-register the SW notification for the remaining duration.
       // The previous registration was lost when the page unloaded (F5/close).
       requestNotificationPermission()
-      scheduleSwNotification(remaining * 1000)
+      void scheduleSwNotification(remaining * 1000)
     } else if (ps.state === 'paused') {
       persistRef.current = ps
       setState('paused')
@@ -213,7 +221,7 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
 
   const start = useCallback((durationMinutes: number) => {
     stopRaf()
-    cancelSwNotification()
+    void cancelSwNotification()
     requestNotificationPermission()
 
     const durationSeconds = durationMinutes * 60
@@ -233,13 +241,13 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
     startRaf()
 
     // Ask the service worker to fire a notification when the timer ends
-    scheduleSwNotification(durationSeconds * 1000)
+    void scheduleSwNotification(durationSeconds * 1000)
   }, [stopRaf, startRaf])
 
   const pause = useCallback(() => {
     if (persistRef.current?.state !== 'running') return
     stopRaf()
-    cancelSwNotification()
+    void cancelSwNotification()
 
     const now = Date.now()
     const ps: PersistedState = { ...persistRef.current, pausedAt: now, state: 'paused' }
@@ -269,14 +277,14 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
     startRaf()
 
     // Reschedule notification for remaining duration
-    cancelSwNotification()
-    scheduleSwNotification(remaining * 1000)
+    void cancelSwNotification()
+    void scheduleSwNotification(remaining * 1000)
     void pausedDuration // used implicitly above
   }, [startRaf])
 
   const reset = useCallback(() => {
     stopRaf()
-    cancelSwNotification()
+    void cancelSwNotification()
     saveTimerState(null)
     persistRef.current = null
     setTimeRemaining(0)

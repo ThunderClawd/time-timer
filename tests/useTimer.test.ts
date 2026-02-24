@@ -19,8 +19,12 @@ beforeEach(() => {
   localStorage.clear()
 
   // Stub navigator.serviceWorker so SW postMessages don't throw
+  const swStub = { postMessage: vi.fn() }
   Object.defineProperty(navigator, 'serviceWorker', {
-    value: { controller: null },
+    value: {
+      controller: swStub,
+      ready: Promise.resolve({ active: swStub }),
+    },
     writable: true,
     configurable: true,
   })
@@ -209,10 +213,13 @@ describe('persistence recovery on mount (F5 / page reload)', () => {
     expect(result.current.timeRemaining).toBeCloseTo(40, 0)
   })
 
-  it('reschedules the SW notification for remaining time on F5 restore', () => {
-    const swController = { postMessage: vi.fn() }
+  it('reschedules the SW notification for remaining time on F5 restore', async () => {
+    const swActive = { postMessage: vi.fn() }
     Object.defineProperty(navigator, 'serviceWorker', {
-      value: { controller: swController },
+      value: {
+        ready: Promise.resolve({ active: swActive }),
+        controller: swActive,
+      },
       writable: true,
       configurable: true,
     })
@@ -227,8 +234,12 @@ describe('persistence recovery on mount (F5 / page reload)', () => {
 
     renderHook(() => useTimer())
 
+    // Wait for the async swPostMessage (serviceWorker.ready) to resolve
+    await Promise.resolve()
+    await Promise.resolve()
+
     // SW should receive a SCHEDULE_NOTIFICATION with ~40 000 ms delay
-    const calls = swController.postMessage.mock.calls
+    const calls = swActive.postMessage.mock.calls
     const scheduleCall = calls.find(([msg]: [{ type: string }]) => msg.type === 'SCHEDULE_NOTIFICATION')
     expect(scheduleCall).toBeDefined()
     expect(scheduleCall[0].delayMs).toBeCloseTo(40_000, -3)
