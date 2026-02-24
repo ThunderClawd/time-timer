@@ -11,6 +11,7 @@ import { DebugPanel } from './components/DebugPanel'
 import { CompletionGlow } from './components/CompletionGlow'
 import { DayNightCycle } from './components/DayNightCycle'
 import { ThemeCollection } from './components/ThemeCollection'
+import { ThemeUnlockPopup } from './components/ThemeUnlockPopup'
 import { AuthButton } from './components/AuthButton'
 import { useTimer, useAuth, useSync } from './hooks'
 import {
@@ -43,6 +44,7 @@ function App() {
     // Load the active theme on mount
     return getCurrentEffectiveTheme()
   })
+  const [newlyUnlockedTheme, setNewlyUnlockedTheme] = useState<DailyTheme | null>(null)
 
   // Auth + cross-device sync
   const auth = useAuth()
@@ -126,6 +128,7 @@ function App() {
     const { unlocked, theme } = autoUnlockTodayTheme()
     if (unlocked) {
       console.log(`Unlocked today's theme: ${theme.name}`)
+      setNewlyUnlockedTheme(theme)
     }
   }, [])
 
@@ -495,6 +498,19 @@ function App() {
           onDebugTimeChange={setDebugTime}
           onClose={handleDebugClose}
           onOpenThemeDebug={handleOpenThemeDebug}
+        />
+      )}
+
+      {/* Theme Unlock Popup */}
+      {newlyUnlockedTheme && (
+        <ThemeUnlockPopup
+          theme={newlyUnlockedTheme}
+          onDismiss={() => setNewlyUnlockedTheme(null)}
+          onEquip={(id) => {
+            setActiveTheme(id)
+            setActiveCollectionTheme(getCurrentEffectiveTheme())
+            setNewlyUnlockedTheme(null)
+          }}
         />
       )}
     </div>
