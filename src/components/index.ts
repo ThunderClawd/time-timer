@@ -1,3 +1,4 @@
+export { AuthButton } from './AuthButton'
 export { TimerDisplay } from './TimerDisplay'
 export { Controls } from './Controls'
 export { Settings } from './Settings'
