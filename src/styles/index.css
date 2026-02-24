@@ -239,12 +239,27 @@ body {
   }
 }
 
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.2s ease-out forwards;
 }
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out forwards;
 }
 
 /* Dark mode adjustments for seasonal themes */

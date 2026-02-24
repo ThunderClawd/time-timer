@@ -11,6 +11,7 @@ import { DebugPanel } from './components/DebugPanel'
 import { CompletionGlow } from './components/CompletionGlow'
 import { DayNightCycle } from './components/DayNightCycle'
 import { ThemeCollection } from './components/ThemeCollection'
+import { ThemeUnlockPopup } from './components/ThemeUnlockPopup'
 import { useTimer } from './hooks'
 import {
   playCompletionSound,
@@ -41,6 +42,7 @@ function App() {
     // Load the active theme on mount
     return getCurrentEffectiveTheme()
   })
+  const [newlyUnlockedTheme, setNewlyUnlockedTheme] = useState<DailyTheme | null>(null)
 
   // Real weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
@@ -107,6 +109,7 @@ function App() {
     const { unlocked, theme } = autoUnlockTodayTheme()
     if (unlocked) {
       console.log(`Unlocked today's theme: ${theme.name}`)
+      setNewlyUnlockedTheme(theme)
     }
   }, [])
 
@@ -471,6 +474,19 @@ function App() {
           onDebugTimeChange={setDebugTime}
           onClose={handleDebugClose}
           onOpenThemeDebug={handleOpenThemeDebug}
+        />
+      )}
+
+      {/* Theme Unlock Popup */}
+      {newlyUnlockedTheme && (
+        <ThemeUnlockPopup
+          theme={newlyUnlockedTheme}
+          onDismiss={() => setNewlyUnlockedTheme(null)}
+          onEquip={(id) => {
+            setActiveTheme(id)
+            setActiveCollectionTheme(getCurrentEffectiveTheme())
+            setNewlyUnlockedTheme(null)
+          }}
         />
       )}
     </div>
