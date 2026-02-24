@@ -27,7 +27,7 @@ beforeEach(() => {
 
   // Stub requestAnimationFrame / cancelAnimationFrame
   let frameId = 0
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+  vi.stubGlobal('requestAnimationFrame', (_cb: FrameRequestCallback) => {
     return ++frameId
   })
   vi.stubGlobal('cancelAnimationFrame', (_id: number) => {})
@@ -39,14 +39,6 @@ afterEach(() => {
   vi.unstubAllGlobals()
   localStorage.clear()
 })
-
-// Helper to advance the clock AND trigger the RAF tick manually
-// (since rAF is stubbed to a no-op scheduler above)
-function advanceAndTick(result: { current: ReturnType<typeof useTimer> }, ms: number) {
-  vi.advanceTimersByTime(ms)
-  // Manually recompute by starting/stopping isn't needed for these tests —
-  // we test the visibility-change recalculation path instead.
-}
 
 // ─── Basic state machine ─────────────────────────────────────────────────────
 

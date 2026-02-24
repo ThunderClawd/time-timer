@@ -177,7 +177,7 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
       setTimeRemaining(0)
     }
     // idle: nothing to restore
-  }, [startRaf]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startRaf])
 
   // ── Page Visibility API – recalculate when returning to foreground ───────
   useEffect(() => {
