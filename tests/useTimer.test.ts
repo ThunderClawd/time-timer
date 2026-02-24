@@ -198,56 +198,82 @@ describe('localStorage persistence', () => {
   })
 })
 
-// ─── Recovery after "reload" ──────────────────────────────────────────────────
+// ─── Recovery after reload / F5 ──────────────────────────────────────────────
 
-describe('persistence recovery on mount', () => {
+describe('persistence recovery on mount (F5 / page reload)', () => {
   it('resumes a running timer that was saved before reload', () => {
-    // Simulate a timer that started 20 s ago and has 40 s remaining
-    const savedState = {
-      startedAt: -20_000,   // relative to fake epoch (0) → 20 s ago
+    // Timer started 20 s ago, 40 s remaining
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
+      startedAt: -20_000,
       pausedAt: null,
       totalDuration: 60,
       state: 'running',
-    }
-    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(savedState))
+    }))
 
     const { result } = renderHook(() => useTimer())
 
-    // Should hydrate and calculate remaining ≈ 40 s
     expect(result.current.state).toBe('running')
     expect(result.current.totalDuration).toBe(60)
     expect(result.current.timeRemaining).toBeCloseTo(40, 0)
   })
 
-  it('marks timer as completed if it expired while backgrounded', () => {
-    const onComplete = vi.fn()
-    // Timer that should have finished 5 s ago
-    const savedState = {
-      startedAt: -65_000,   // 65 s ago
+  it('reschedules the SW notification for remaining time on F5 restore', () => {
+    const swController = { postMessage: vi.fn() }
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: { controller: swController },
+      writable: true,
+      configurable: true,
+    })
+
+    // Timer started 20 s ago, 40 s remaining
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
+      startedAt: -20_000,
       pausedAt: null,
-      totalDuration: 60,    // was 60 s
+      totalDuration: 60,
       state: 'running',
-    }
-    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(savedState))
+    }))
+
+    renderHook(() => useTimer())
+
+    // SW should receive a SCHEDULE_NOTIFICATION with ~40 000 ms delay
+    const calls = swController.postMessage.mock.calls
+    const scheduleCall = calls.find(([msg]: [{ type: string }]) => msg.type === 'SCHEDULE_NOTIFICATION')
+    expect(scheduleCall).toBeDefined()
+    expect(scheduleCall[0].delayMs).toBeCloseTo(40_000, -3)
+  })
+
+  it('fires onComplete immediately if the timer expired during reload', () => {
+    const onComplete = vi.fn()
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
+      startedAt: -65_000,   // started 65 s ago
+      pausedAt: null,
+      totalDuration: 60,    // was 60 s → already expired
+      state: 'running',
+    }))
 
     renderHook(() => useTimer({ onComplete }))
 
     expect(onComplete).toHaveBeenCalledTimes(1)
   })
 
-  it('restores a paused timer with correct remaining time', () => {
-    // Paused after 15 s; 45 s remaining
-    const savedState = {
+  it('restores a paused timer with correct remaining time after reload', () => {
+    // Started at -20 s, paused at -5 s → 15 s elapsed → 45 s remaining
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
       startedAt: -20_000,
-      pausedAt: -5_000,     // paused 5 s later → 15 s elapsed
+      pausedAt: -5_000,
       totalDuration: 60,
       state: 'paused',
-    }
-    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(savedState))
+    }))
 
     const { result } = renderHook(() => useTimer())
     expect(result.current.state).toBe('paused')
     expect(result.current.timeRemaining).toBeCloseTo(45, 0)
+  })
+
+  it('starts from clean state when nothing is saved (normal first load)', () => {
+    const { result } = renderHook(() => useTimer())
+    expect(result.current.state).toBe('idle')
+    expect(result.current.timeRemaining).toBe(0)
   })
 })
 

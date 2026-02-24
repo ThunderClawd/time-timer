@@ -139,7 +139,7 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
     rafRef.current = requestAnimationFrame(tick)
   }, [stopRaf, tick])
 
-  // ── Hydrate from localStorage on mount ──────────────────────────────────
+  // ── Hydrate from localStorage on mount (handles F5 refresh + app relaunch) ──
   useEffect(() => {
     const ps = loadTimerState()
     if (!ps) return
@@ -147,7 +147,7 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
     const remaining = computeRemaining(ps)
 
     if (ps.state === 'running' && remaining <= 0) {
-      // Timer expired while we were away
+      // Timer expired while the page was unloaded — fire completion now
       const completed: PersistedState = { ...ps, state: 'completed' }
       persistRef.current = completed
       saveTimerState(completed)
@@ -161,6 +161,10 @@ export function useTimer(options: UseTimerOptions = {}): UseTimerReturn {
       setTotalDuration(ps.totalDuration)
       setTimeRemaining(remaining)
       startRaf()
+      // Re-register the SW notification for the remaining duration.
+      // The previous registration was lost when the page unloaded (F5/close).
+      requestNotificationPermission()
+      scheduleSwNotification(remaining * 1000)
     } else if (ps.state === 'paused') {
       persistRef.current = ps
       setState('paused')
