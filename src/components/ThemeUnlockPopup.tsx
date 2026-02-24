@@ -68,7 +68,7 @@ export function ThemeUnlockPopup({ theme, onDismiss, onEquip }: ThemeUnlockPopup
 
   return (
     <div
-      className={`fixed z-50 inset-x-3 bottom-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-8 sm:w-full sm:max-w-sm ${
+      className={`fixed z-50 inset-x-3 bottom-3 sm:inset-x-0 sm:mx-auto sm:max-w-sm sm:bottom-8 ${
         isExiting ? 'animate-fade-out' : 'animate-slide-up'
       }`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
